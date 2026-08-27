@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Josefin Sans', system-ui, -apple-system, sans-serif;
+  --font-josefin: 'Josefin Sans', sans-serif;
+  --font-masakula: 'Josefin Sans', sans-serif;
+  --font-body: 'Josefin Sans', sans-serif;
+  --font-heading: 'Josefin Sans', sans-serif;
+}
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #e4e4e7;
+    border-radius: 9999px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #a1a1aa;
+  }
+}
+
+*, ::before, ::after {
+  font-family: 'Josefin Sans', system-ui, -apple-system, sans-serif;
+}
+
+html, body {
+  background-color: #fcfcfc;
+  color: #09090b;
+  font-family: 'Josefin Sans', system-ui, -apple-system, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+button, input, optgroup, select, textarea {
+  font-family: 'Josefin Sans', system-ui, -apple-system, sans-serif;
+}
+
+.font-josefin {
+  font-family: 'Josefin Sans', sans-serif;
+}
+
+.font-masakula {
+  font-family: 'Josefin Sans', sans-serif;
+}
+
+
