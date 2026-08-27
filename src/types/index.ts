@@ -109,9 +109,10 @@ export interface CartItem {
 }
 
 export type PaymentMethod = 
-  | 'multicaixa' // TPA / Multicaixa
-  | 'cash' // Dinheiro
-  | 'transfer' // Transferência Bancária / Express
+  | 'cash' // Dinheiro (Numerário)
+  | 'multicaixa' // Multicaixa TPA
+  | 'express' // Multicaixa Express
+  | 'transfer' // Transferência Bancária
   | 'mixed'; // Misto
 
 export interface SaleTransaction {

@@ -19,6 +19,7 @@ import {
 import { Product, ProductStatus } from '../../types';
 import { formatKz } from '../../utils/formatters';
 import { StockModal } from './StockModal';
+import { supabaseService } from '../../services/supabaseService';
 
 interface ProductsViewProps {
   products: Product[];
@@ -66,7 +67,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     setIsModalOpen(true);
   };
 
-  const handleSaveProduct = (productPayload: Partial<Product>, isEditing: boolean) => {
+  const handleSaveProduct = async (productPayload: Partial<Product>, isEditing: boolean) => {
     if (isEditing && editingProduct) {
       setProducts(prev => prev.map(p => p.id === editingProduct.id ? {
         ...p,
@@ -79,8 +80,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
         name: productPayload.name || '',
         sku: productPayload.sku || `MSK-${Math.floor(1000 + Math.random() * 9000)}`,
         barcode: productPayload.barcode || `560${Math.floor(1000000000 + Math.random() * 9000000000)}`,
-        category: productPayload.category || 'Informática & Laptops',
-        saleType: productPayload.saleType || 'Unidade (un)',
+        category: productPayload.category || 'Alimentação',
+        saleType: productPayload.saleType || 'Unidade',
         costPrice: productPayload.costPrice || 0,
         salePrice: productPayload.salePrice || 0,
         stock: productPayload.stock || 0,
@@ -91,13 +92,18 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       };
       setProducts(prev => [newProd, ...prev]);
       showToast(`Entrada de estoque realizada para "${newProd.name}".`);
+
+      // Asynchronously sync to Supabase
+      supabaseService.insertProduct(newProd).catch(err => console.warn('Supabase sync:', err));
     }
   };
 
-  const handleDeleteProduct = (id: string, name: string) => {
+  const handleDeleteProduct = async (id: string, name: string) => {
     if (window.confirm(`Tem certeza de que deseja eliminar o produto "${name}"?`)) {
       setProducts(prev => prev.filter(p => p.id !== id));
       showToast(`Produto "${name}" removido do catálogo.`);
+      // Asynchronously delete from Supabase
+      supabaseService.deleteProduct(id).catch(err => console.warn('Supabase delete:', err));
     }
   };
 

@@ -14,6 +14,7 @@ export { ProductsView } from './views/ProductsView';
 export { StockModal } from './views/StockModal';
 export { ServiceOrdersView, WorkOrdersView } from './views/ServiceOrdersView';
 export { PosView } from './views/PosView';
+export { ThermalReceipt } from './ThermalReceipt';
 export { CustomersView } from './views/CustomersView';
 export { ReportsView } from './views/ReportsView';
 export { SettingsView } from './views/SettingsView';
@@ -23,3 +24,7 @@ export { DashboardView } from './views/DashboardView';
 export { SplashOne } from './intro/SplashOne';
 export { SplashTwo } from './intro/SplashTwo';
 export { OnboardingView } from './intro/OnboardingView';
+
+// Supabase Instance & Services
+export { supabase } from '../lib/supabase';
+export { supabaseService } from '../services/supabaseService';

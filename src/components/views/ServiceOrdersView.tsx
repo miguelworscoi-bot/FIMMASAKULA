@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { WorkOrder, WorkOrderStatus, WorkOrderPriority } from '../../types';
 import { formatKz, formatDate, formatDateTime, getPriorityConfig } from '../../utils/formatters';
+import { supabaseService } from '../../services/supabaseService';
 
 interface ServiceOrdersViewProps {
   workOrders: WorkOrder[];
@@ -112,6 +113,9 @@ export const ServiceOrdersView: React.FC<ServiceOrdersViewProps> = ({
     setWorkOrders(prev => [newWO, ...prev]);
     setIsModalOpen(false);
     showToast(`Ordem de Serviço ${newWO.code} aberta com sucesso.`);
+
+    // Asynchronously sync to Supabase
+    supabaseService.insertServiceOrder(newWO).catch(err => console.warn('Supabase OS sync:', err));
   };
 
   const handleUpdateStatus = (id: string, newStatus: WorkOrderStatus) => {

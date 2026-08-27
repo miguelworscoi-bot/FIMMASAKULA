@@ -36,6 +36,8 @@ import {
   loadStoredSettings,
   saveStoredSettings
 } from '../../utils/storage';
+import { supabase } from '../../lib/supabase';
+import { supabaseService } from '../../services/supabaseService';
 
 interface AppShellProps {
   userSession?: UserSession;
@@ -108,6 +110,8 @@ export const AppShell: React.FC<AppShellProps> = ({
 }) => {
   // 3. Gerenciador de estado central (activeTab)
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  const [isSupabaseSyncing, setIsSupabaseSyncing] = useState<boolean>(false);
+  const [supabaseConnected, setSupabaseConnected] = useState<boolean>(false);
 
   // Application Data States with localStorage Persistence
   const [products, setProducts] = useState<Product[]>(() => loadStoredProducts());
@@ -115,6 +119,87 @@ export const AppShell: React.FC<AppShellProps> = ({
   const [customers, setCustomers] = useState<Customer[]>(() => loadStoredCustomers());
   const [sales, setSales] = useState<SaleTransaction[]>(() => loadStoredSales());
   const [settings, setSettings] = useState<CompanySettings>(() => loadStoredSettings());
+
+  // Supabase Initial Fetch & Realtime Channels Subscription
+  useEffect(() => {
+    let isMounted = true;
+
+    async function syncSupabase() {
+      setIsSupabaseSyncing(true);
+      try {
+        const [prodResult, orderResult, salesResult] = await Promise.all([
+          supabaseService.getProducts(),
+          supabaseService.getServiceOrders(),
+          supabaseService.getSales(),
+        ]);
+
+        if (isMounted) {
+          if (prodResult.fromSupabase && prodResult.data.length > 0) {
+            setProducts(prodResult.data);
+            setSupabaseConnected(true);
+          }
+          if (orderResult.fromSupabase && orderResult.data.length > 0) {
+            setWorkOrders(orderResult.data);
+            setSupabaseConnected(true);
+          }
+          if (salesResult.fromSupabase && salesResult.data.length > 0) {
+            setSales(salesResult.data);
+            setSupabaseConnected(true);
+          }
+        }
+      } catch (err) {
+        console.warn('Supabase sync notice:', err);
+      } finally {
+        if (isMounted) setIsSupabaseSyncing(false);
+      }
+    }
+
+    syncSupabase();
+
+    // Subscribe to Realtime Channels
+    const productsChannel = supabase
+      .channel('public:products')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, async () => {
+        const res = await supabaseService.getProducts();
+        if (res.fromSupabase && isMounted) {
+          setProducts(res.data);
+        }
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED' && isMounted) setSupabaseConnected(true);
+      });
+
+    const ordersChannel = supabase
+      .channel('public:service_orders')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_orders' }, async () => {
+        const res = await supabaseService.getServiceOrders();
+        if (res.fromSupabase && isMounted) {
+          setWorkOrders(res.data);
+        }
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED' && isMounted) setSupabaseConnected(true);
+      });
+
+    const salesChannel = supabase
+      .channel('public:sales')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, async () => {
+        const res = await supabaseService.getSales();
+        if (res.fromSupabase && isMounted) {
+          setSales(res.data);
+        }
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED' && isMounted) setSupabaseConnected(true);
+      });
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(productsChannel);
+      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(salesChannel);
+    };
+  }, []);
 
   // Automatic Persistence to localStorage
   useEffect(() => {
