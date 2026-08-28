@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
-import { Product, WorkOrder, SaleTransaction } from '../types';
-import { INITIAL_PRODUCTS, INITIAL_WORK_ORDERS, INITIAL_SALES } from '../data/mockData';
+import { Product, WorkOrder, SaleTransaction, Expense, CashSession, CashMovement } from '../types';
+import { INITIAL_PRODUCTS, INITIAL_WORK_ORDERS, INITIAL_SALES, INITIAL_EXPENSES, INITIAL_CASH_SESSION, INITIAL_CASH_MOVEMENTS } from '../data/mockData';
 
 export interface SupabaseProductRow {
   id?: string;
@@ -15,6 +15,10 @@ export interface SupabaseProductRow {
   sale_price?: number;
   stock?: number;
   min_stock?: number;
+  supplier?: string;
+  batch?: string;
+  expiration_date?: string;
+  notes?: string;
   unit?: string;
   status?: string;
   created_at?: string;
@@ -51,6 +55,10 @@ export function mapSupabaseToProduct(row: any): Product {
     barcode: row.barcode || `560${Math.floor(1000000000 + Math.random() * 9000000000)}`,
     category: row.category || 'Alimentação',
     saleType: row.sales_type || row.saleType || 'Unidade',
+    supplier: row.supplier || '',
+    batch: row.batch || '',
+    expirationDate: row.expiration_date || row.expiryDate || '',
+    notes: row.notes || '',
     costPrice: cost,
     salePrice: price,
     stock: typeof row.stock === 'number' ? row.stock : 25,
@@ -74,6 +82,10 @@ export function mapProductToSupabase(p: Partial<Product>): SupabaseProductRow {
     sale_price: p.salePrice || 0,
     stock: p.stock ?? 25,
     min_stock: p.minStock ?? 5,
+    supplier: p.supplier || '',
+    batch: p.batch || '',
+    expiration_date: p.expirationDate || '',
+    notes: p.notes || '',
     sku: p.sku || `MSK-${Math.floor(1000 + Math.random() * 9000)}`,
     unit: p.unit || 'un',
     status: p.status || 'active',
@@ -321,6 +333,250 @@ export const supabaseService = {
       return !error;
     } catch (err) {
       console.warn('Supabase update stock notice:', err);
+      return false;
+    }
+  },
+
+  async getExpenses(): Promise<{ data: Expense[]; fromSupabase: boolean }> {
+    try {
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('*')
+        .order('due_date', { ascending: false });
+
+      if (!error && Array.isArray(data) && data.length > 0) {
+        return {
+          data: data.map((row: any) => ({
+            id: String(row.id),
+            description: row.description || '',
+            category: row.category || 'Operacional',
+            amount: typeof row.amount === 'number' ? row.amount : parseFloat(String(row.amount).replace(/[^0-9.]/g, '')) || 0,
+            due_date: row.due_date || new Date().toISOString().split('T')[0],
+            payment_date: row.payment_date || null,
+            status: row.status || 'PENDING',
+            supplier: row.supplier || '',
+            payment_method: row.payment_method || 'Multicaixa',
+            notes: row.notes || ''
+          })),
+          fromSupabase: true
+        };
+      }
+    } catch (err) {
+      console.warn('Supabase fetch expenses notice (using local data):', err);
+    }
+    return { data: INITIAL_EXPENSES, fromSupabase: false };
+  },
+
+  async insertExpense(expense: Expense): Promise<{ success: boolean; data?: Expense }> {
+    try {
+      const payload = {
+        description: expense.description,
+        category: expense.category,
+        amount: expense.amount,
+        due_date: expense.due_date,
+        payment_date: expense.payment_date || null,
+        status: expense.status,
+        supplier: expense.supplier || null,
+        payment_method: expense.payment_method || 'Multicaixa',
+        notes: expense.notes || null,
+      };
+
+      const { data, error } = await supabase
+        .from('expenses')
+        .insert([payload])
+        .select();
+
+      if (!error && data && data.length > 0) {
+        return { success: true, data: { ...expense, id: String(data[0].id) } };
+      }
+    } catch (err) {
+      console.warn('Supabase insert expense notice:', err);
+    }
+    return { success: false, data: { ...expense, id: expense.id || `exp-${Date.now()}` } };
+  },
+
+  async updateExpense(id: string, updates: Partial<Expense>): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('expenses')
+        .update(updates)
+        .eq('id', id);
+      return !error;
+    } catch (err) {
+      console.warn('Supabase update expense notice:', err);
+      return false;
+    }
+  },
+
+  async deleteExpense(id: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('id', id);
+      return !error;
+    } catch (err) {
+      console.warn('Supabase delete expense notice:', err);
+      return false;
+    }
+  },
+
+  async getActiveCashSession(): Promise<{ data: CashSession | null; fromSupabase: boolean }> {
+    try {
+      const { data, error } = await supabase
+        .from('cash_sessions')
+        .select('*')
+        .eq('status', 'OPEN')
+        .order('opened_at', { ascending: false })
+        .maybeSingle();
+
+      if (!error && data) {
+        return {
+          data: {
+            id: String(data.id),
+            operator_name: data.operator_name || 'Operador',
+            opened_at: data.opened_at || new Date().toISOString(),
+            closed_at: data.closed_at || null,
+            initial_amount: typeof data.initial_amount === 'number' ? data.initial_amount : parseFloat(data.initial_amount) || 0,
+            actual_cash: data.actual_cash !== null && data.actual_cash !== undefined ? Number(data.actual_cash) : null,
+            expected_cash: typeof data.expected_cash === 'number' ? data.expected_cash : parseFloat(data.expected_cash) || 0,
+            difference: data.difference !== null && data.difference !== undefined ? Number(data.difference) : null,
+            status: data.status || 'OPEN',
+            notes: data.notes || null,
+          },
+          fromSupabase: true
+        };
+      }
+    } catch (err) {
+      console.warn('Supabase getActiveCashSession notice (using local fallback):', err);
+    }
+    return { data: INITIAL_CASH_SESSION, fromSupabase: false };
+  },
+
+  async getCashMovements(sessionId: string): Promise<{ data: CashMovement[]; fromSupabase: boolean }> {
+    try {
+      const { data, error } = await supabase
+        .from('cash_movements')
+        .select('*')
+        .eq('session_id', sessionId)
+        .order('created_at', { ascending: false });
+
+      if (!error && Array.isArray(data) && data.length > 0) {
+        return {
+          data: data.map((m: any) => ({
+            id: String(m.id),
+            session_id: String(m.session_id),
+            type: m.type as 'SUPRIMENTO' | 'SANGRIA',
+            amount: typeof m.amount === 'number' ? m.amount : parseFloat(m.amount) || 0,
+            reason: m.reason || '',
+            created_at: m.created_at || new Date().toISOString(),
+          })),
+          fromSupabase: true
+        };
+      }
+    } catch (err) {
+      console.warn('Supabase getCashMovements notice:', err);
+    }
+    return { data: INITIAL_CASH_MOVEMENTS.filter(m => m.session_id === sessionId), fromSupabase: false };
+  },
+
+  async openCashSession(payload: { operator_name: string; initial_amount: number }): Promise<CashSession> {
+    const sessionToCreate: CashSession = {
+      id: `cs-${Date.now()}`,
+      operator_name: payload.operator_name,
+      opened_at: new Date().toISOString(),
+      closed_at: null,
+      initial_amount: payload.initial_amount,
+      expected_cash: payload.initial_amount,
+      actual_cash: null,
+      difference: null,
+      status: 'OPEN',
+      notes: null,
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from('cash_sessions')
+        .insert([{
+          operator_name: sessionToCreate.operator_name,
+          initial_amount: sessionToCreate.initial_amount,
+          expected_cash: sessionToCreate.expected_cash,
+          status: 'OPEN',
+          opened_at: sessionToCreate.opened_at,
+        }])
+        .select()
+        .single();
+
+      if (!error && data) {
+        return {
+          ...sessionToCreate,
+          id: String(data.id),
+        };
+      }
+    } catch (err) {
+      console.warn('Supabase openCashSession notice:', err);
+    }
+    return sessionToCreate;
+  },
+
+  async insertCashMovement(movement: CashMovement): Promise<CashMovement> {
+    const newMovement: CashMovement = {
+      ...movement,
+      id: movement.id || `mov-${Date.now()}`,
+      created_at: movement.created_at || new Date().toISOString(),
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from('cash_movements')
+        .insert([{
+          session_id: newMovement.session_id,
+          type: newMovement.type,
+          amount: newMovement.amount,
+          reason: newMovement.reason,
+        }])
+        .select()
+        .single();
+
+      if (!error && data) {
+        return {
+          ...newMovement,
+          id: String(data.id),
+        };
+      }
+    } catch (err) {
+      console.warn('Supabase insertCashMovement notice:', err);
+    }
+    return newMovement;
+  },
+
+  async updateCashSessionExpected(sessionId: string, newExpected: number): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('cash_sessions')
+        .update({ expected_cash: newExpected })
+        .eq('id', sessionId);
+      return !error;
+    } catch (err) {
+      console.warn('Supabase updateCashSessionExpected notice:', err);
+      return false;
+    }
+  },
+
+  async closeCashSession(sessionId: string, actualCash: number, difference: number): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('cash_sessions')
+        .update({
+          actual_cash: actualCash,
+          difference: difference,
+          status: 'CLOSED',
+          closed_at: new Date().toISOString(),
+        })
+        .eq('id', sessionId);
+      return !error;
+    } catch (err) {
+      console.warn('Supabase closeCashSession notice:', err);
       return false;
     }
   },

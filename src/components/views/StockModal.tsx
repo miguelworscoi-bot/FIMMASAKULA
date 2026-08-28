@@ -9,7 +9,11 @@ import {
   Layers, 
   AlertCircle, 
   Check, 
-  Percent 
+  Percent,
+  Calendar,
+  Truck,
+  MapPin,
+  PackageCheck
 } from 'lucide-react';
 import { Product, ProductStatus } from '../../types';
 import { formatKz } from '../../utils/formatters';
@@ -29,16 +33,27 @@ export const StockModal: React.FC<StockModalProps> = ({
   productToEdit,
   mode = 'stock_entry',
 }) => {
+  // Default future date (+6 months)
+  const getDefaultExpiryDate = () => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 6);
+    return d.toISOString().split('T')[0];
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
     barcode: '',
-    category: 'Informática & Laptops',
+    category: 'Medicamentos',
+    supplier: '',
+    batch: '',
     saleType: 'Unidade (un)',
     costPrice: '',
     salePrice: '',
     stock: '10',
     minStock: '5',
+    expirationDate: getDefaultExpiryDate(),
+    notes: '',
     unit: 'un',
   });
 
@@ -47,31 +62,41 @@ export const StockModal: React.FC<StockModalProps> = ({
   useEffect(() => {
     if (productToEdit) {
       setFormData({
-        name: productToEdit.name,
-        sku: productToEdit.sku,
-        barcode: productToEdit.barcode,
-        category: productToEdit.category,
+        name: productToEdit.name || '',
+        sku: productToEdit.sku || '',
+        barcode: productToEdit.barcode || '',
+        category: productToEdit.category || 'Medicamentos',
+        supplier: productToEdit.supplier || '',
+        batch: productToEdit.batch || '',
         saleType: productToEdit.saleType || 'Unidade (un)',
-        costPrice: productToEdit.costPrice.toString(),
-        salePrice: productToEdit.salePrice.toString(),
-        stock: productToEdit.stock.toString(),
-        minStock: productToEdit.minStock.toString(),
+        costPrice: productToEdit.costPrice ? productToEdit.costPrice.toString() : '',
+        salePrice: productToEdit.salePrice ? productToEdit.salePrice.toString() : '',
+        stock: productToEdit.stock !== undefined ? productToEdit.stock.toString() : '10',
+        minStock: productToEdit.minStock !== undefined ? productToEdit.minStock.toString() : '5',
+        expirationDate: productToEdit.expirationDate || getDefaultExpiryDate(),
+        notes: productToEdit.notes || '',
         unit: productToEdit.unit || 'un',
       });
     } else {
       const randomSuffix = Math.floor(1000 + Math.random() * 9000);
       const randomBarcode = `560${Math.floor(1000000000 + Math.random() * 9000000000)}`;
       const randomSku = `MSK-${randomSuffix}`;
+      const randomBatch = `L-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
+
       setFormData({
         name: '',
         sku: randomSku,
         barcode: randomBarcode,
-        category: 'Informática & Laptops',
+        category: 'Medicamentos',
+        supplier: '',
+        batch: randomBatch,
         saleType: 'Unidade (un)',
         costPrice: '',
         salePrice: '',
         stock: '10',
         minStock: '5',
+        expirationDate: getDefaultExpiryDate(),
+        notes: '',
         unit: 'un',
       });
     }
@@ -84,10 +109,12 @@ export const StockModal: React.FC<StockModalProps> = ({
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const randomBarcode = `560${Math.floor(1000000000 + Math.random() * 9000000000)}`;
     const randomSku = `MSK-${randomSuffix}`;
+    const randomBatch = `L-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
     setFormData(prev => ({
       ...prev,
       sku: randomSku,
       barcode: randomBarcode,
+      batch: randomBatch,
     }));
   };
 
@@ -114,6 +141,10 @@ export const StockModal: React.FC<StockModalProps> = ({
     if (isNaN(stockQty) || stockQty < 0) {
       errors.stock = 'Quantidade de estoque inválida.';
     }
+    const minStockQty = parseInt(formData.minStock);
+    if (isNaN(minStockQty) || minStockQty < 0) {
+      errors.minStock = 'Quantidade mínima inválida.';
+    }
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0 || (Object.keys(errors).length === 1 && errors.salePrice?.startsWith('Aviso'));
@@ -137,6 +168,10 @@ export const StockModal: React.FC<StockModalProps> = ({
       sku: formData.sku.trim(),
       barcode: formData.barcode.trim(),
       category: formData.category,
+      supplier: formData.supplier.trim(),
+      batch: formData.batch.trim(),
+      expirationDate: formData.expirationDate,
+      notes: formData.notes.trim(),
       saleType: formData.saleType,
       costPrice: cost,
       salePrice: sale,
@@ -158,25 +193,25 @@ export const StockModal: React.FC<StockModalProps> = ({
   const marginPercent = saleNum > 0 ? ((profitKz / saleNum) * 100).toFixed(1) : '0';
 
   return (
-    <div className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-gray-100 space-y-5 animate-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 bg-zinc-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-gray-100 space-y-5 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+        <div className="flex items-center justify-between pb-3 border-b border-gray-100 sticky top-0 bg-white z-10">
           <div>
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-zinc-950 text-white">
-                <Boxes size={18} className="text-amber-400" />
+            <div className="flex items-center gap-2.5">
+              <div className="p-2.5 rounded-2xl bg-zinc-950 text-white">
+                <Boxes size={20} className="text-amber-400" />
               </div>
               <div>
                 <h3 className="font-bold text-lg text-zinc-950">
                   {mode === 'stock_entry' 
-                    ? 'Entrada de Estoque' 
+                    ? 'Registrar Entrada de Estoque' 
                     : productToEdit 
-                    ? 'Editar Artigo' 
-                    : 'Novo Artigo / Produto'}
+                    ? 'Editar Entrada de Estoque' 
+                    : 'Novo Artigo / Entrada'}
                 </h3>
                 <p className="text-xs text-zinc-400">
-                  Registro de artigos com controle de custo, margem e código em Kwanzas (Kz)
+                  Preencha as informações de lote, validade, fornecedor e valores em Kwanzas (Kz)
                 </p>
               </div>
             </div>
@@ -191,69 +226,71 @@ export const StockModal: React.FC<StockModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          {/* Nome do Produto */}
-          <div className="space-y-1">
-            <div className="flex justify-between items-center">
-              <label className="font-semibold text-zinc-700">Nome do Produto / Descrição</label>
-              {validationErrors.name && (
-                <span className="text-[10px] font-semibold text-rose-500">{validationErrors.name}</span>
-              )}
-            </div>
-            <input
-              type="text"
-              required
-              placeholder="Ex: Teclado Mecânico RGB Wireless, Monitor IPS 24..."
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className={`w-full px-3.5 py-2.5 rounded-2xl bg-zinc-50 border text-zinc-900 focus:bg-white focus:ring-2 focus:ring-zinc-950 focus:outline-none transition-all ${
-                validationErrors.name ? 'border-rose-400 bg-rose-50/30' : 'border-gray-200'
-              }`}
-            />
-          </div>
-
-          {/* Código de Barras & SKU */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <label className="font-semibold text-zinc-700">Código de Barras</label>
-                <button
-                  type="button"
-                  onClick={generateAutomaticCodes}
-                  className="text-[10px] text-amber-600 hover:text-amber-700 font-bold flex items-center gap-1 cursor-pointer"
-                  title="Gerar código aleatório EAN-13"
-                >
-                  <Sparkles size={11} />
-                  <span>Gerar Auto</span>
-                </button>
+          
+          {/* Linha 1: Nome do Produto & SKU */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="md:col-span-2 space-y-1">
+              <div className="flex justify-between items-center">
+                <label className="font-semibold text-zinc-700">
+                  Nome do Produto <span className="text-rose-500">*</span>
+                </label>
+                {validationErrors.name && (
+                  <span className="text-[10px] font-semibold text-rose-500">{validationErrors.name}</span>
+                )}
               </div>
-              <div className="relative">
-                <Barcode size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-                <input
-                  type="text"
-                  required
-                  value={formData.barcode}
-                  onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                  placeholder="Ex: 560123456789"
-                  className="w-full pl-9 pr-3.5 py-2.5 rounded-2xl bg-zinc-50 border border-gray-200 text-zinc-900 font-mono text-xs focus:bg-white focus:ring-2 focus:ring-zinc-950 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="font-semibold text-zinc-700">Código SKU / Referência</label>
               <input
                 type="text"
                 required
+                placeholder="Ex: Soro Fisiológico 500ml, Amoxicilina 500mg..."
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className={`w-full px-3.5 py-2.5 rounded-2xl bg-zinc-50 border text-zinc-900 focus:bg-white focus:ring-2 focus:ring-zinc-950 focus:outline-none transition-all ${
+                  validationErrors.name ? 'border-rose-400 bg-rose-50/30' : 'border-gray-200'
+                }`}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="font-semibold text-zinc-700">SKU / Código</label>
+              <input
+                type="text"
                 value={formData.sku}
                 onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                placeholder="Ex: MSK-4920"
+                placeholder="Ex: MSK-1092"
                 className="w-full px-3.5 py-2.5 rounded-2xl bg-zinc-50 border border-gray-200 text-zinc-900 font-mono text-xs focus:bg-white focus:ring-2 focus:ring-zinc-950 focus:outline-none"
               />
             </div>
           </div>
 
-          {/* Categoria & Tipo de Venda */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Linha 2: Código de Barras com Gerador Automático */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <label className="font-semibold text-zinc-700">Código de Barras EAN-13 <span className="text-rose-500">*</span></label>
+              <button
+                type="button"
+                onClick={generateAutomaticCodes}
+                className="text-[10px] text-amber-600 hover:text-amber-700 font-bold flex items-center gap-1 cursor-pointer"
+                title="Gerar código aleatório EAN-13 e Lote"
+              >
+                <Sparkles size={11} />
+                <span>Gerar Códigos Auto</span>
+              </button>
+            </div>
+            <div className="relative">
+              <Barcode size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+              <input
+                type="text"
+                required
+                value={formData.barcode}
+                onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                placeholder="Ex: 560123456789"
+                className="w-full pl-9 pr-3.5 py-2.5 rounded-2xl bg-zinc-50 border border-gray-200 text-zinc-900 font-mono text-xs focus:bg-white focus:ring-2 focus:ring-zinc-950 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Linha 3: Categoria, Fornecedor & Lote */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="space-y-1">
               <label className="font-semibold text-zinc-700">Categoria</label>
               <select
@@ -261,6 +298,8 @@ export const StockModal: React.FC<StockModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-2xl bg-zinc-50 border border-gray-200 text-zinc-900 font-medium focus:bg-white focus:ring-2 focus:ring-zinc-950 focus:outline-none cursor-pointer"
               >
+                <option value="Medicamentos">Medicamentos</option>
+                <option value="Insumos">Insumos</option>
                 <option value="Alimentação">Alimentação</option>
                 <option value="Bebidas">Bebidas</option>
                 <option value="Limpeza">Limpeza</option>
@@ -275,7 +314,76 @@ export const StockModal: React.FC<StockModalProps> = ({
             </div>
 
             <div className="space-y-1">
-              <label className="font-semibold text-zinc-700">Tipo de venda</label>
+              <label className="font-semibold text-zinc-700">Fornecedor</label>
+              <input
+                type="text"
+                placeholder="Ex: Farmacêutica ABC, TechDistrib"
+                value={formData.supplier}
+                onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-2xl bg-zinc-50 border border-gray-200 text-zinc-900 focus:bg-white focus:ring-2 focus:ring-zinc-950 focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="font-semibold text-zinc-700">Número do Lote</label>
+              <input
+                type="text"
+                placeholder="Ex: LOTE-8821"
+                value={formData.batch}
+                onChange={(e) => setFormData({ ...formData, batch: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-2xl bg-zinc-50 border border-gray-200 text-zinc-900 font-mono text-xs focus:bg-white focus:ring-2 focus:ring-zinc-950 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-gray-100">
+            <p className="text-[11px] font-bold text-zinc-900 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <DollarSign size={13} className="text-amber-500" />
+              <span>Valores & Regras de Estoque</span>
+            </p>
+          </div>
+
+          {/* Linha 4: Quantidade Entrada, Quantidade Mínima & Tipo de Venda */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <label className="font-semibold text-zinc-700">
+                Qtd de Entrada <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="number"
+                required
+                min="0"
+                placeholder="0"
+                value={formData.stock}
+                onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-2xl bg-zinc-50 border border-gray-200 text-zinc-900 focus:bg-white focus:ring-2 focus:ring-zinc-950 focus:outline-none font-bold"
+              />
+            </div>
+
+            {/* CAMPO: QUANTIDADE MÍNIMA COM BADGE DE NOVO */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="font-semibold text-zinc-700">
+                  Qtd Mínima <span className="text-rose-500">*</span>
+                </label>
+                <span className="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-md font-bold">
+                  Alerta
+                </span>
+              </div>
+              <input
+                type="number"
+                required
+                min="0"
+                placeholder="Ex: 5"
+                value={formData.minStock}
+                onChange={(e) => setFormData({ ...formData, minStock: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-2xl bg-zinc-50 border border-amber-300/80 text-zinc-900 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none font-semibold"
+              />
+              <span className="text-[10px] text-zinc-400 block">Gera alerta quando o estoque atingir este nível.</span>
+            </div>
+
+            <div className="space-y-1">
+              <label className="font-semibold text-zinc-700">Tipo de Venda</label>
               <select
                 value={formData.saleType}
                 onChange={(e) => {
@@ -302,7 +410,7 @@ export const StockModal: React.FC<StockModalProps> = ({
           <div className="p-3.5 bg-zinc-50 rounded-2xl border border-gray-200 space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="font-semibold text-zinc-700">Preço de Custo (Kz)</label>
+                <label className="font-semibold text-zinc-700">Preço Unitário Custo (Kz)</label>
                 <input
                   type="number"
                   required
@@ -315,7 +423,7 @@ export const StockModal: React.FC<StockModalProps> = ({
               </div>
 
               <div className="space-y-1">
-                <label className="font-semibold text-zinc-700">Preço de Venda (Kz)</label>
+                <label className="font-semibold text-zinc-700">Preço Unitário Venda (Kz)</label>
                 <input
                   type="number"
                   required
@@ -343,37 +451,45 @@ export const StockModal: React.FC<StockModalProps> = ({
             </div>
           </div>
 
-          {/* Quantidades e Estoque Mínimo */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Linha 5: DATA DE VALIDADE & OBSERVAÇÕES / LOCALIZAÇÃO */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
             <div className="space-y-1">
-              <label className="font-semibold text-zinc-700">
-                {mode === 'stock_entry' ? 'Quantidade a Inserir' : 'Estoque Atual'}
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="font-semibold text-zinc-700 flex items-center gap-1.5">
+                  <Calendar size={13} className="text-zinc-500" />
+                  <span>Data de Validade <span className="text-rose-500">*</span></span>
+                </label>
+                <span className="text-[9px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-md font-bold">
+                  Monitorado
+                </span>
+              </div>
               <input
-                type="number"
+                type="date"
                 required
-                min="0"
-                value={formData.stock}
-                onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-2xl bg-zinc-50 border border-gray-200 text-zinc-900 focus:bg-white focus:ring-2 focus:ring-zinc-950 focus:outline-none font-bold"
+                value={formData.expirationDate}
+                onChange={(e) => setFormData({ ...formData, expirationDate: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-2xl bg-zinc-50 border border-blue-300 text-zinc-900 font-semibold focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
+              <span className="text-[10px] text-zinc-400 block">Monitora expiração automática do lote no painel.</span>
             </div>
 
             <div className="space-y-1">
-              <label className="font-semibold text-zinc-700">Estoque Mínimo (Alerta)</label>
+              <label className="font-semibold text-zinc-700 flex items-center gap-1.5">
+                <MapPin size={13} className="text-zinc-500" />
+                <span>Observações / Localização</span>
+              </label>
               <input
-                type="number"
-                required
-                min="1"
-                value={formData.minStock}
-                onChange={(e) => setFormData({ ...formData, minStock: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-2xl bg-zinc-50 border border-gray-200 text-zinc-900 focus:bg-white focus:ring-2 focus:ring-zinc-950 focus:outline-none"
+                type="text"
+                placeholder="Ex: Prateleira A-2, Almoxarifado Central..."
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-2xl bg-zinc-50 border border-gray-200 text-zinc-900 placeholder-zinc-400 focus:bg-white focus:ring-2 focus:ring-zinc-950 focus:outline-none"
               />
             </div>
           </div>
 
           {/* Botões do Rodapé */}
-          <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-3">
+          <div className="pt-4 border-t border-gray-100 flex items-center justify-end gap-3 sticky bottom-0 bg-white">
             <button
               type="button"
               onClick={onClose}
@@ -383,10 +499,10 @@ export const StockModal: React.FC<StockModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold shadow-xs flex items-center gap-2 cursor-pointer"
+              className="px-5 py-2.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold shadow-xs flex items-center gap-2 cursor-pointer transition-all"
             >
               <Check size={16} className="text-emerald-400" />
-              <span>{productToEdit ? 'Atualizar Artigo' : 'Salvar no Estoque'}</span>
+              <span>{productToEdit ? 'Atualizar Entrada' : 'Salvar Entrada de Estoque'}</span>
             </button>
           </div>
         </form>

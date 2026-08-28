@@ -17,9 +17,14 @@ import {
   Smartphone, 
   Store,
   LayoutGrid,
-  ChevronRight
+  ChevronRight,
+  Shield,
+  HelpCircle,
+  Sparkles
 } from 'lucide-react';
 import { UserSession } from '../../types';
+import { useAuth, UserRole, DEMO_PROFILES } from '../../contexts/AuthContext';
+import { PermissionMatrixModal } from './PermissionMatrixModal';
 
 interface LoginModalProps {
   onLoginSuccess: (session: UserSession) => void;
@@ -30,18 +35,23 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   onLoginSuccess,
   onBackToOnboarding,
 }) => {
+  const { signIn, switchRole, setProfile } = useAuth();
+
   // Step State: 1 = Credentials, 2 = Terminal & Profile selection
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
 
   // Form State
-  const [email, setEmail] = useState('miguelworscoi@gmail.com');
+  const [email, setEmail] = useState('admin@masakula.co.ao');
   const [password, setPassword] = useState('admin2026');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
   // Step 2 Selection State
   const [selectedTerminal, setSelectedTerminal] = useState('Caixa 01 - Balcão Principal');
-  const [selectedRole, setSelectedRole] = useState<'Administrador' | 'Operador de Caixa' | 'Técnico de Serviços'>('Administrador');
+  const [selectedRole, setSelectedRole] = useState<UserRole>('GERENTE');
+
+  // Matrix Modal
+  const [isMatrixOpen, setIsMatrixOpen] = useState(false);
 
   // Submission State
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -63,46 +73,69 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       return;
     }
 
+    // Auto-detect role from credentials
+    if (email.toLowerCase().includes('caixa') || email.toLowerCase().includes('operador')) {
+      setSelectedRole('CAIXA');
+    } else {
+      setSelectedRole('GERENTE');
+    }
+
     setCurrentStep(2);
   };
 
   // Handle Final Submission (Step 2)
-  const handleFinalSubmit = (e: React.FormEvent) => {
+  const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
     setIsSubmitting(true);
 
-    // Simulate authentication verification
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      await signIn(email.trim(), password.trim(), selectedRole);
+
       setLoginSuccessNotice(true);
+
+      const targetProfile = DEMO_PROFILES[selectedRole];
+      setProfile({
+        ...targetProfile,
+        email: email.trim(),
+        full_name: email.toLowerCase().includes('admin') || email.toLowerCase().includes('miguel')
+          ? 'Miguel Worscoi (Gerente Geral)'
+          : selectedRole === 'GERENTE' ? 'Gerente Geral Masakula' : 'Operador de Caixa',
+        terminalId: selectedTerminal
+      });
 
       const session: UserSession = {
         email: email.trim(),
-        name: email.split('@')[0].replace('.', ' ').toUpperCase(),
-        role: selectedRole,
+        name: email.toLowerCase().includes('admin') || email.toLowerCase().includes('miguel')
+          ? 'Miguel Worscoi'
+          : selectedRole === 'GERENTE' ? 'Gerente Geral' : 'Operador de Caixa',
+        role: selectedRole === 'GERENTE' ? 'Administrador Geral' : 'Operador de Caixa',
         terminalId: selectedTerminal,
         isLoggedIn: true,
       };
 
       setTimeout(() => {
+        setIsSubmitting(false);
         onLoginSuccess(session);
       }, 500);
-    }, 800);
+    } catch (err: any) {
+      setIsSubmitting(false);
+      setErrorMessage(err?.message || 'Falha ao autenticar utilizador.');
+    }
   };
 
   // Quick fill demo accounts
-  const handleQuickFill = (role: 'admin' | 'cashier') => {
-    if (role === 'admin') {
-      setEmail('miguelworscoi@gmail.com');
+  const handleQuickFill = (role: UserRole) => {
+    if (role === 'GERENTE') {
+      setEmail('admin@masakula.co.ao');
       setPassword('admin2026');
-      setSelectedRole('Administrador');
-      setSelectedTerminal('Caixa 01 - Balcão Principal');
+      setSelectedRole('GERENTE');
+      setSelectedTerminal('Terminal Master 01 - Gestão');
     } else {
-      setEmail('caixa.operador@masakula.co.ao');
+      setEmail('caixa@masakula.co.ao');
       setPassword('operador2026');
-      setSelectedRole('Operador de Caixa');
-      setSelectedTerminal('Caixa 02 - Frente de Loja');
+      setSelectedRole('CAIXA');
+      setSelectedTerminal('Caixa 01 - Balcão Principal');
     }
   };
 
@@ -114,7 +147,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       {/* Subtle Background Pattern */}
       <div className="absolute inset-0 z-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-70 pointer-events-none" />
       <div className="absolute top-1/4 -left-20 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-red-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* Main Corporate Login Card */}
       <div 
@@ -133,7 +166,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               {currentStep > 1 ? '✓' : '1'}
             </span>
             <span className={`text-[11px] font-semibold hidden sm:inline ${currentStep === 1 ? 'text-zinc-900' : 'text-zinc-500'}`}>
-              Conta
+              Credenciais
             </span>
           </div>
 
@@ -149,35 +182,25 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               2
             </span>
             <span className={`text-[11px] font-semibold hidden sm:inline ${currentStep === 2 ? 'text-zinc-900' : 'text-zinc-400'}`}>
-              Terminal
+              Terminal & Perfil
             </span>
           </div>
 
           <ChevronRight size={14} className="text-zinc-400" />
 
-          {/* Ícone de Cadeado azul ativo */}
-          <div 
-            id="step-indicator-lock"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-600 text-white text-[11px] font-bold shadow-xs shadow-blue-600/20"
-            title="Conexão Segura Ativa"
+          {/* Botão de Matriz de Permissões */}
+          <button
+            type="button"
+            onClick={() => setIsMatrixOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-bold transition-colors cursor-pointer border border-blue-200/80"
+            title="Abrir Matriz de Permissões (Gerente vs. Caixa)"
           >
-            <Lock size={12} className="text-white" />
-            <span className="text-[10px] uppercase tracking-wider">Seguro</span>
-          </div>
-
-          <ChevronRight size={14} className="text-zinc-400" />
-
-          {/* Ícone de Grid */}
-          <div 
-            id="step-indicator-grid"
-            className="w-7 h-7 rounded-xl bg-zinc-100 flex items-center justify-center text-zinc-500"
-            title="Módulo ERP & Painel Geral"
-          >
-            <LayoutGrid size={14} />
-          </div>
+            <Shield size={12} className="text-blue-600" />
+            <span className="text-[10px] tracking-tight">Matriz de Acessos</span>
+          </button>
         </div>
 
-        {/* Corporate Brand Header: Logótipo "MK" e Slogan "Um nome, várias soluções" */}
+        {/* Corporate Brand Header */}
         <div className="flex items-center justify-between pb-3 border-b border-gray-100">
           <div className="flex items-center gap-3">
             {/* MK Emblem Logo */}
@@ -208,6 +231,49 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </div>
         </div>
 
+        {/* Quick Role Selector Cards */}
+        <div className="grid grid-cols-2 gap-2.5">
+          <button
+            type="button"
+            onClick={() => handleQuickFill('GERENTE')}
+            className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+              selectedRole === 'GERENTE' && email.includes('admin')
+                ? 'bg-zinc-950 text-white border-zinc-950 shadow-sm'
+                : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border-gray-200'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-bold text-xs">👑 Gerente</span>
+              {selectedRole === 'GERENTE' && email.includes('admin') && (
+                <CheckCircle2 size={14} className="text-emerald-400" />
+              )}
+            </div>
+            <p className={`text-[10px] ${selectedRole === 'GERENTE' && email.includes('admin') ? 'text-zinc-300' : 'text-zinc-500'}`}>
+              Controle Total & Gestão
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleQuickFill('CAIXA')}
+            className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+              selectedRole === 'CAIXA' && email.includes('caixa')
+                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border-gray-200'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-bold text-xs">🏷️ Caixa</span>
+              {selectedRole === 'CAIXA' && email.includes('caixa') && (
+                <CheckCircle2 size={14} className="text-white" />
+              )}
+            </div>
+            <p className={`text-[10px] ${selectedRole === 'CAIXA' && email.includes('caixa') ? 'text-blue-100' : 'text-zinc-500'}`}>
+              PDV & Faturamento
+            </p>
+          </button>
+        </div>
+
         {/* Form Content Area */}
         <div className="space-y-1">
           <h2 className="text-lg font-bold text-zinc-950">
@@ -216,7 +282,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           <p className="text-xs text-zinc-500">
             {currentStep === 1 
               ? 'Introduza o seu e-mail e palavra-passe para aceder ao sistema.'
-              : 'Selecione o terminal de atendimento e perfil de acesso para esta sessão.'}
+              : 'Selecione o terminal de atendimento e confirme o nível de acesso.'}
           </p>
         </div>
 
@@ -243,7 +309,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="miguelworscoi@gmail.com"
+                placeholder="admin@masakula.co.ao"
                 className="w-full px-3.5 py-3 rounded-2xl bg-zinc-50 border border-gray-200 text-zinc-900 focus:bg-white focus:ring-2 focus:ring-zinc-950 focus:outline-none transition-colors"
               />
             </div>
@@ -294,7 +360,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               </div>
             </div>
 
-            {/* Remember Me & Recover Link */}
+            {/* Remember Me & Matrix Link */}
             <div className="flex items-center justify-between pt-1">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -308,10 +374,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => setPassword('admin2026')}
-                className="text-xs text-zinc-500 hover:text-zinc-950 font-medium underline cursor-pointer"
+                onClick={() => setIsMatrixOpen(true)}
+                className="text-xs text-blue-600 hover:text-blue-800 font-semibold underline cursor-pointer flex items-center gap-1"
               >
-                Preencher padrão
+                <HelpCircle size={13} />
+                <span>Consultar Matriz de Permissões</span>
               </button>
             </div>
 
@@ -385,18 +452,26 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
             {/* Role Profile */}
             <div className="space-y-1.5 pt-1">
-              <label className="font-semibold text-zinc-800 flex items-center gap-1.5">
-                <UserCheck size={14} className="text-zinc-500" />
-                <span>Perfil de Acesso do Operador</span>
+              <label className="font-semibold text-zinc-800 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <UserCheck size={14} className="text-zinc-500" />
+                  <span>Perfil de Acesso do Operador</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsMatrixOpen(true)}
+                  className="text-[10px] text-blue-600 hover:underline font-semibold"
+                >
+                  Ver Níveis de Acesso
+                </button>
               </label>
               <select
                 value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value as any)}
-                className="w-full px-3.5 py-2.5 rounded-2xl bg-zinc-50 border border-gray-200 text-zinc-900 font-semibold focus:bg-white focus:ring-2 focus:ring-zinc-950 focus:outline-none"
+                onChange={(e) => setSelectedRole(e.target.value as UserRole)}
+                className="w-full px-3.5 py-2.5 rounded-2xl bg-zinc-50 border border-gray-200 text-zinc-900 font-semibold focus:bg-white focus:ring-2 focus:ring-zinc-950 focus:outline-none cursor-pointer"
               >
-                <option value="Administrador">Administrador Geral (Acesso Completo)</option>
-                <option value="Operador de Caixa">Operador de Caixa (PDV & Vendas)</option>
-                <option value="Técnico de Serviços">Técnico de Manutenção (Ordens de Serviço)</option>
+                <option value="GERENTE">👑 Gerente Geral (Controle Total & Gestão)</option>
+                <option value="CAIXA">🏷️ Operador de Caixa (PDV, Fechamento & Leitura Estoque)</option>
               </select>
             </div>
 
@@ -443,25 +518,35 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
         {/* Quick Demo Accounts Footer Bar */}
         <div className="pt-2 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-zinc-500">
-          <span className="font-medium">Acessos Rápidos de Demonstração:</span>
+          <span className="font-medium">Credenciais Pré-configuradas:</span>
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => handleQuickFill('admin')}
+              onClick={() => handleQuickFill('GERENTE')}
               className="px-2.5 py-1 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-semibold transition-colors cursor-pointer"
             >
-              Admin Master
+              👑 Gerente Master
             </button>
             <button
               type="button"
-              onClick={() => handleQuickFill('cashier')}
+              onClick={() => handleQuickFill('CAIXA')}
               className="px-2.5 py-1 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-semibold transition-colors cursor-pointer"
             >
-              Operador Caixa
+              🏷️ Operador Caixa
             </button>
           </div>
         </div>
       </div>
+
+      {/* Permission Matrix Modal */}
+      <PermissionMatrixModal
+        isOpen={isMatrixOpen}
+        onClose={() => setIsMatrixOpen(false)}
+        onSelectRole={(role) => {
+          handleQuickFill(role);
+          setIsMatrixOpen(false);
+        }}
+      />
     </div>
   );
 };

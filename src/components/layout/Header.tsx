@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { ActiveTab, NavigationTab } from '../../types';
 import { formatKz } from '../../utils/formatters';
+import { NotificationsCenter } from '../NotificationsCenter';
 
 interface HeaderProps {
   activeTab: ActiveTab | NavigationTab;
@@ -37,7 +38,6 @@ export const Header: React.FC<HeaderProps> = ({
   lowStockCount = 2,
   openOSCount = 3,
 }) => {
-  const [showNotifications, setShowNotifications] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const getPageInfo = (tab: ActiveTab | NavigationTab) => {
@@ -52,6 +52,16 @@ export const Header: React.FC<HeaderProps> = ({
         return {
           title: 'Vendas & PDV',
           subtitle: 'Faturação rápida de balcão, caixa e emissão de talões AGT',
+        };
+      case 'cash_session':
+        return {
+          title: 'Sessão & Controle de Caixa',
+          subtitle: 'Abertura, sangrias, suprimentos de troco e fechamento com apuração de quebra/sobra',
+        };
+      case 'expenses':
+        return {
+          title: 'Gestão de Despesas',
+          subtitle: 'Controle de saídas, fornecedores e contas a pagar em Kwanzas (Kz)',
         };
       case 'products':
         return {
@@ -168,89 +178,8 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Notification Button */}
-          <div className="relative">
-            <button
-              id="btn-notifications"
-              type="button"
-              onClick={() => setShowNotifications(!showNotifications)}
-              aria-label="Abrir notificações"
-              className="w-9 h-9 rounded-2xl bg-white hover:bg-zinc-100 border border-gray-200 flex items-center justify-center text-zinc-600 transition-colors relative"
-            >
-              <Bell size={17} />
-              {(lowStockCount > 0 || openOSCount > 0) && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[9px] font-bold flex items-center justify-center ring-2 ring-white">
-                  {lowStockCount + openOSCount}
-                </span>
-              )}
-            </button>
-
-            {/* Notification Dropdown */}
-            {showNotifications && (
-              <div 
-                className="absolute right-0 mt-2 w-80 bg-white rounded-3xl shadow-2xl border border-gray-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-150"
-              >
-                <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                  <h4 className="font-bold text-sm text-zinc-900">Alertas do Sistema</h4>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600">
-                    {lowStockCount + openOSCount} pendentes
-                  </span>
-                </div>
-
-                <div className="py-2 space-y-2 text-xs">
-                  {lowStockCount > 0 && (
-                    <div 
-                      onClick={() => {
-                        setActiveTab('products');
-                        setShowNotifications(false);
-                      }}
-                      className="p-2.5 rounded-2xl bg-rose-50 border border-rose-100 flex items-start gap-2.5 cursor-pointer hover:bg-rose-100/70 transition-colors"
-                    >
-                      <AlertTriangle size={16} className="text-rose-600 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-semibold text-rose-900">{lowStockCount} produtos com stock baixo</p>
-                        <p className="text-[11px] text-rose-700">Artigos atingiram o ponto de reposição em armazém.</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {openOSCount > 0 && (
-                    <div 
-                      onClick={() => {
-                        setActiveTab('services');
-                        setShowNotifications(false);
-                      }}
-                      className="p-2.5 rounded-2xl bg-amber-50 border border-amber-100 flex items-start gap-2.5 cursor-pointer hover:bg-amber-100/70 transition-colors"
-                    >
-                      <Wrench size={16} className="text-amber-600 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-semibold text-amber-900">{openOSCount} Ordens de Serviço em aberto</p>
-                        <p className="text-[11px] text-amber-700">Equipamentos aguardando diagnóstico ou reparo.</p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="p-2.5 rounded-2xl bg-zinc-50 border border-zinc-100 flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-zinc-900">Certificado AGT Ativo</p>
-                      <p className="text-[11px] text-zinc-500">Comunicação e assinatura digital em conformidade.</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-gray-100 text-center">
-                  <button
-                    type="button"
-                    onClick={() => setShowNotifications(false)}
-                    className="text-xs font-semibold text-zinc-500 hover:text-zinc-900"
-                  >
-                    Fechar
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Real-time Notifications Center (Stock & Expiration) */}
+          <NotificationsCenter onNavigateToProducts={() => setActiveTab('products')} />
         </div>
       </div>
     </header>

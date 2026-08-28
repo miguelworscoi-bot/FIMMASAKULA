@@ -20,6 +20,8 @@ export type ActiveTab =
   | 'products'
   | 'service_orders'
   | 'sales'
+  | 'cash_session'
+  | 'expenses'
   | 'customers'
   | 'reports'
   | 'settings';
@@ -28,6 +30,41 @@ export type NavigationTab =
   | ActiveTab
   | 'services'
   | 'pos';
+
+export interface CashSession {
+  id: string;
+  operator_name: string;
+  opened_at: string;
+  closed_at?: string | null;
+  initial_amount: number;
+  actual_cash?: number | null;
+  expected_cash: number;
+  difference?: number | null;
+  status: 'OPEN' | 'CLOSED';
+  notes?: string | null;
+}
+
+export interface CashMovement {
+  id?: string;
+  session_id: string;
+  type: 'SUPRIMENTO' | 'SANGRIA';
+  amount: number;
+  reason: string;
+  created_at?: string;
+}
+
+export interface Expense {
+  id?: string;
+  description: string;
+  category: string;
+  amount: number;
+  due_date: string;
+  payment_date?: string | null;
+  status: 'PENDING' | 'PAID' | 'OVERDUE';
+  supplier?: string;
+  payment_method?: string;
+  notes?: string;
+}
 
 export interface NavItemConfig {
   id: ActiveTab;
@@ -49,6 +86,10 @@ export interface Product {
   barcode: string;
   category: string;
   saleType?: string;
+  supplier?: string;
+  batch?: string;
+  expirationDate?: string;
+  notes?: string;
   costPrice: number; // in Kz
   salePrice: number; // in Kz
   stock: number;

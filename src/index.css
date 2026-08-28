@@ -48,4 +48,29 @@ button, input, optgroup, select, textarea {
   font-family: 'Josefin Sans', sans-serif;
 }
 
+@media print {
+  /* Se a impressão for do Relatório Z */
+  body.printing-report-z * {
+    visibility: hidden !important;
+  }
+
+  #printable-report-z,
+  #printable-report-z * {
+    visibility: visible !important;
+  }
+
+  #printable-report-z {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    margin: 0;
+    padding: 2mm 4mm;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11px;
+    color: #000;
+    background: #fff;
+  }
+}
+
 

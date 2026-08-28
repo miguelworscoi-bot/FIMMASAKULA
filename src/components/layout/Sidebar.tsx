@@ -4,6 +4,8 @@ import {
   Package, 
   Wrench, 
   ShoppingCart, 
+  Coins,
+  TrendingDown,
   Users, 
   BarChart3, 
   Settings,
@@ -48,6 +50,18 @@ export const MAIN_NAV_ITEMS: SidebarNavOption[] = [
     label: 'Vendas & PDV',
     tooltip: 'Vendas & Frente de Caixa PDV',
     icon: ShoppingCart,
+  },
+  {
+    id: 'cash_session',
+    label: 'Sessão de Caixa',
+    tooltip: 'Abertura, Sangrias, Suprimentos & Fechamento',
+    icon: Coins,
+  },
+  {
+    id: 'expenses',
+    label: 'Despesas',
+    tooltip: 'Despesas & Contas a Pagar (Kz)',
+    icon: TrendingDown,
   },
   {
     id: 'customers',

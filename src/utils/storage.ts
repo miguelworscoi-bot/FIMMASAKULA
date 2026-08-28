@@ -1,10 +1,13 @@
-import { Product, WorkOrder, Customer, SaleTransaction, CompanySettings, UserSession } from '../types';
+import { Product, WorkOrder, Customer, SaleTransaction, CompanySettings, UserSession, Expense, CashSession, CashMovement } from '../types';
 import { 
   INITIAL_PRODUCTS, 
   INITIAL_WORK_ORDERS, 
   INITIAL_CUSTOMERS, 
   INITIAL_SALES, 
-  INITIAL_SETTINGS 
+  INITIAL_SETTINGS,
+  INITIAL_EXPENSES,
+  INITIAL_CASH_SESSION,
+  INITIAL_CASH_MOVEMENTS
 } from '../data/mockData';
 
 const STORAGE_KEYS = {
@@ -12,6 +15,9 @@ const STORAGE_KEYS = {
   WORK_ORDERS: 'masakula_orders',
   CUSTOMERS: 'masakula_customers',
   SALES: 'masakula_sales',
+  EXPENSES: 'masakula_expenses',
+  CASH_SESSION: 'masakula_cash_session',
+  CASH_MOVEMENTS: 'masakula_cash_movements',
   SETTINGS: 'masakula_settings',
   USER_SESSION: 'masakula_user_session',
   FLOW_STATE: 'masakula_app_flow_state',
@@ -101,6 +107,74 @@ export function saveStoredSales(sales: SaleTransaction[]): void {
   }
 }
 
+export function loadStoredExpenses(): Expense[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.EXPENSES);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (err) {
+    console.warn('Erro ao carregar despesas do localStorage:', err);
+  }
+  return INITIAL_EXPENSES;
+}
+
+export function saveStoredExpenses(expenses: Expense[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(expenses));
+  } catch (err) {
+    console.warn('Erro ao salvar despesas no localStorage:', err);
+  }
+}
+
+export function loadStoredCashSession(): CashSession | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.CASH_SESSION);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && parsed.status === 'OPEN') return parsed;
+      if (parsed && typeof parsed === 'object' && parsed.status === 'CLOSED') return null;
+    }
+  } catch (err) {
+    console.warn('Erro ao carregar sessão de caixa do localStorage:', err);
+  }
+  return INITIAL_CASH_SESSION;
+}
+
+export function saveStoredCashSession(session: CashSession | null): void {
+  try {
+    if (session) {
+      localStorage.setItem(STORAGE_KEYS.CASH_SESSION, JSON.stringify(session));
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.CASH_SESSION);
+    }
+  } catch (err) {
+    console.warn('Erro ao salvar sessão de caixa no localStorage:', err);
+  }
+}
+
+export function loadStoredCashMovements(): CashMovement[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.CASH_MOVEMENTS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (err) {
+    console.warn('Erro ao carregar movimentos de caixa do localStorage:', err);
+  }
+  return INITIAL_CASH_MOVEMENTS;
+}
+
+export function saveStoredCashMovements(movements: CashMovement[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.CASH_MOVEMENTS, JSON.stringify(movements));
+  } catch (err) {
+    console.warn('Erro ao salvar movimentos de caixa no localStorage:', err);
+  }
+}
+
 export function loadStoredSettings(): CompanySettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
@@ -128,6 +202,9 @@ export function resetToDemoData(): void {
     localStorage.removeItem(STORAGE_KEYS.WORK_ORDERS);
     localStorage.removeItem(STORAGE_KEYS.CUSTOMERS);
     localStorage.removeItem(STORAGE_KEYS.SALES);
+    localStorage.removeItem(STORAGE_KEYS.EXPENSES);
+    localStorage.removeItem(STORAGE_KEYS.CASH_SESSION);
+    localStorage.removeItem(STORAGE_KEYS.CASH_MOVEMENTS);
     localStorage.removeItem(STORAGE_KEYS.SETTINGS);
   } catch (err) {
     console.warn('Erro ao resetar dados:', err);

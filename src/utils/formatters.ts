@@ -37,6 +37,22 @@ export function formatDate(dateString: string): string {
 }
 
 /**
+ * Format ISO date string into time (HH:mm)
+ */
+export function formatTime(dateString: string): string {
+  if (!dateString) return '-';
+  try {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('pt-PT', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
+  } catch {
+    return dateString;
+  }
+}
+
+/**
  * Format ISO date string into date and time (DD/MM/YYYY HH:mm)
  */
 export function formatDateTime(dateString: string): string {

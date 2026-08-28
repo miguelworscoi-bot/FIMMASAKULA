@@ -5,9 +5,11 @@ export { MasakulaSystem, default } from '../App';
 export { Sidebar } from './layout/Sidebar';
 export { Header } from './layout/Header';
 export { AppShell } from './layout/AppShell';
+export { NotificationsCenter } from './NotificationsCenter';
 
 // Auth Submodules
 export { LoginModal, AuthView } from './auth/AuthView';
+export { RoleGuard } from './RoleGuard';
 
 // View Submodules & Modals
 export { ProductsView } from './views/ProductsView';

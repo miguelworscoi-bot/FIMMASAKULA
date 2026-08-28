@@ -5,6 +5,8 @@ import {
   Package, 
   Wrench, 
   ShoppingCart, 
+  Coins,
+  TrendingDown,
   Users, 
   BarChart3, 
   Settings,
@@ -14,13 +16,15 @@ import {
   ShieldCheck,
   CheckCircle2
 } from 'lucide-react';
-import { ActiveTab, NavigationTab, Product, WorkOrder, Customer, SaleTransaction, CompanySettings, UserSession } from '../../types';
+import { ActiveTab, NavigationTab, Product, WorkOrder, Customer, SaleTransaction, CompanySettings, UserSession, Expense, CashSession, CashMovement } from '../../types';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { DashboardView } from '../views/DashboardView';
 import { ProductsView } from '../views/ProductsView';
 import { ServiceOrdersView } from '../views/ServiceOrdersView';
 import { PosView } from '../views/PosView';
+import { CashSessionView } from '../views/CashSessionView';
+import { ExpensesView } from '../views/ExpensesView';
 import { CustomersView } from '../views/CustomersView';
 import { ReportsView } from '../views/ReportsView';
 import { SettingsView } from '../views/SettingsView';
@@ -29,10 +33,16 @@ import {
   saveStoredProducts, 
   loadStoredWorkOrders, 
   saveStoredWorkOrders,
-  loadStoredCustomers,
+  loadStoredCustomers, 
   saveStoredCustomers,
   loadStoredSales,
   saveStoredSales,
+  loadStoredExpenses,
+  saveStoredExpenses,
+  loadStoredCashSession,
+  saveStoredCashSession,
+  loadStoredCashMovements,
+  saveStoredCashMovements,
   loadStoredSettings,
   saveStoredSettings
 } from '../../utils/storage';
@@ -80,6 +90,20 @@ export const TAB_METADATA: Record<ActiveTab, {
     icon: ShoppingCart,
     phase: 'Fase 1 • Operacional',
   },
+  cash_session: {
+    title: 'Sessão de Caixa',
+    subtitle: 'Abertura, sangrias, suprimentos de troco e fechamento com apuração de quebra/sobra',
+    statusMessage: 'Módulo pronto. Controle total do fluxo de gaveta em dinheiro vivo em Kwanzas (Kz).',
+    icon: Coins,
+    phase: 'Fase 1 • Operacional',
+  },
+  expenses: {
+    title: 'Gestão de Despesas',
+    subtitle: 'Controle de saídas, fornecedores e contas a pagar em Kwanzas (Kz)',
+    statusMessage: 'Módulo pronto. Lançamento de despesas, contas a pagar, status de liquidação e fornecedores.',
+    icon: TrendingDown,
+    phase: 'Fase 1 • Operacional',
+  },
   customers: {
     title: 'Clientes',
     subtitle: 'Cadastro de clientes particulares e empresas com NIF',
@@ -118,6 +142,9 @@ export const AppShell: React.FC<AppShellProps> = ({
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>(() => loadStoredWorkOrders());
   const [customers, setCustomers] = useState<Customer[]>(() => loadStoredCustomers());
   const [sales, setSales] = useState<SaleTransaction[]>(() => loadStoredSales());
+  const [expenses, setExpenses] = useState<Expense[]>(() => loadStoredExpenses());
+  const [activeCashSession, setActiveCashSession] = useState<CashSession | null>(() => loadStoredCashSession());
+  const [cashMovements, setCashMovements] = useState<CashMovement[]>(() => loadStoredCashMovements());
   const [settings, setSettings] = useState<CompanySettings>(() => loadStoredSettings());
 
   // Supabase Initial Fetch & Realtime Channels Subscription
@@ -127,10 +154,12 @@ export const AppShell: React.FC<AppShellProps> = ({
     async function syncSupabase() {
       setIsSupabaseSyncing(true);
       try {
-        const [prodResult, orderResult, salesResult] = await Promise.all([
+        const [prodResult, orderResult, salesResult, expenseResult, cashResult] = await Promise.all([
           supabaseService.getProducts(),
           supabaseService.getServiceOrders(),
           supabaseService.getSales(),
+          supabaseService.getExpenses(),
+          supabaseService.getActiveCashSession(),
         ]);
 
         if (isMounted) {
@@ -144,6 +173,20 @@ export const AppShell: React.FC<AppShellProps> = ({
           }
           if (salesResult.fromSupabase && salesResult.data.length > 0) {
             setSales(salesResult.data);
+            setSupabaseConnected(true);
+          }
+          if (expenseResult.fromSupabase && expenseResult.data.length > 0) {
+            setExpenses(expenseResult.data);
+            setSupabaseConnected(true);
+          }
+          if (cashResult.fromSupabase) {
+            setActiveCashSession(cashResult.data);
+            if (cashResult.data?.id) {
+              const movRes = await supabaseService.getCashMovements(cashResult.data.id);
+              if (movRes.fromSupabase) {
+                setCashMovements(movRes.data);
+              }
+            }
             setSupabaseConnected(true);
           }
         }
@@ -193,11 +236,37 @@ export const AppShell: React.FC<AppShellProps> = ({
         if (status === 'SUBSCRIBED' && isMounted) setSupabaseConnected(true);
       });
 
+    const expensesChannel = supabase
+      .channel('public:expenses')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, async () => {
+        const res = await supabaseService.getExpenses();
+        if (res.fromSupabase && isMounted) {
+          setExpenses(res.data);
+        }
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED' && isMounted) setSupabaseConnected(true);
+      });
+
+    const cashChannel = supabase
+      .channel('public:cash_sessions')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cash_sessions' }, async () => {
+        const res = await supabaseService.getActiveCashSession();
+        if (res.fromSupabase && isMounted) {
+          setActiveCashSession(res.data);
+        }
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED' && isMounted) setSupabaseConnected(true);
+      });
+
     return () => {
       isMounted = false;
       supabase.removeChannel(productsChannel);
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(salesChannel);
+      supabase.removeChannel(expensesChannel);
+      supabase.removeChannel(cashChannel);
     };
   }, []);
 
@@ -217,6 +286,18 @@ export const AppShell: React.FC<AppShellProps> = ({
   useEffect(() => {
     saveStoredSales(sales);
   }, [sales]);
+
+  useEffect(() => {
+    saveStoredExpenses(expenses);
+  }, [expenses]);
+
+  useEffect(() => {
+    saveStoredCashSession(activeCashSession);
+  }, [activeCashSession]);
+
+  useEffect(() => {
+    saveStoredCashMovements(cashMovements);
+  }, [cashMovements]);
 
   useEffect(() => {
     saveStoredSettings(settings);
@@ -269,6 +350,22 @@ export const AppShell: React.FC<AppShellProps> = ({
             sales={sales}
             setSales={setSales}
             customers={customers}
+          />
+        );
+      case 'cash_session':
+        return (
+          <CashSessionView
+            activeSession={activeCashSession}
+            setActiveSession={setActiveCashSession}
+            movements={cashMovements}
+            setMovements={setCashMovements}
+          />
+        );
+      case 'expenses':
+        return (
+          <ExpensesView
+            expenses={expenses}
+            setExpenses={setExpenses}
           />
         );
       case 'customers':
