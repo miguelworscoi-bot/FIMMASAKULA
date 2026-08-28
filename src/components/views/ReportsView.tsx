@@ -18,6 +18,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { SaleTransaction, Product } from '../../types';
 import ReportsScreen from '../ReportsScreen';
+import ReportZModal, { ReportZData } from '../ReportZModal';
 
 interface SaleRecord {
   id: string;
@@ -58,6 +59,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ sales: localSales = []
   });
   const [loading, setLoading] = useState(true);
   const [openingFloat, setOpeningFloat] = useState<string>('10000'); // Fundo de Maneio / Caixa Inicial
+  const [isReportZModalOpen, setIsReportZModalOpen] = useState(false);
 
   const parseKz = (priceStr: string | number | undefined): number => {
     if (typeof priceStr === 'number') return priceStr;
@@ -167,6 +169,50 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ sales: localSales = []
   const floatNumeric = parseFloat(openingFloat) || 0;
   const expectedCashInDrawer = floatNumeric + summary.cashTotal;
 
+  // Montagem estruturada do Relatório Z Legal / Fiscal
+  const reportZData: ReportZData = {
+    reportNumber: `RZ-${selectedDate.replace(/-/g, '')}-001`,
+    openingDate: `${selectedDate} 08:00:00`,
+    closingDate: `${selectedDate} ${new Date().toLocaleTimeString('pt-AO')}`,
+    posTerminal: 'POS-01 (Principal)',
+    operatorName: 'Operador Masakula Tech',
+    company: {
+      name: 'Masakula Comércio Geral e Prestação de Serviços, Lda',
+      tradeName: 'Masakula Tech & Retail',
+      slogan: 'Um nome, várias soluções',
+      nif: '5417082910',
+      address: 'Avenida 4 de Fevereiro, Edifício Baía, Luanda - Angola',
+      phone: '+244 923 000 000 / +244 940 000 000',
+      email: 'contacto@masakula.co.ao'
+    },
+    summary: {
+      grossTotal: summary.totalRevenue,
+      discountsTotal: 0,
+      netTotal: summary.totalRevenue,
+      totalSalesCount: summary.totalTransactions,
+      voidedSalesCount: localSales.filter(s => s.status === 'canceled').length,
+      voidedSalesTotal: localSales.filter(s => s.status === 'canceled').reduce((acc, s) => acc + s.total, 0)
+    },
+    paymentsBreakdown: {
+      cash: summary.cashTotal,
+      multicaixa: summary.tpaTotal,
+      transfer: Math.max(0, summary.totalRevenue - summary.cashTotal - summary.tpaTotal)
+    },
+    vatBreakdown: [
+      {
+        rate: 14,
+        baseAmount: Math.round((summary.totalRevenue / 1.14) * 100) / 100,
+        vatAmount: Math.round((summary.totalRevenue - (summary.totalRevenue / 1.14)) * 100) / 100,
+      },
+      {
+        rate: 0,
+        baseAmount: 0,
+        vatAmount: 0,
+        exemptionReason: 'Isenção nos termos da alínea a) do nº 1 do art. 12.º do CIVA'
+      }
+    ]
+  };
+
   return (
     <div id="view-reports" className="space-y-6 animate-in fade-in duration-200">
       
@@ -234,11 +280,11 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ sales: localSales = []
 
               <button
                 type="button"
-                onClick={handlePrintReportZ}
+                onClick={() => setIsReportZModalOpen(true)}
                 className="bg-zinc-950 hover:bg-zinc-800 text-white font-semibold text-xs px-4 py-2.5 rounded-2xl shadow-xs flex items-center gap-2 transition cursor-pointer"
               >
                 <Printer size={15} />
-                <span>Impressão Relatório Z</span>
+                <span>Visualizar / Imprimir Relatório Z</span>
               </button>
             </div>
           </div>
@@ -491,6 +537,13 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ sales: localSales = []
       </div>
       </>
       )}
+
+      {/* Modal Interativo e Certificado do Relatório Z */}
+      <ReportZModal
+        isOpen={isReportZModalOpen}
+        onClose={() => setIsReportZModalOpen(false)}
+        data={reportZData}
+      />
 
     </div>
   );

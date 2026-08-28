@@ -321,6 +321,52 @@ export const supabaseService = {
     return { success: false, data: sale };
   },
 
+  async cancelOrRefundSale(
+    saleId: string,
+    items: { productId: string; quantity: number }[],
+    reason: string = 'Estorno de venda autorizado pelo Gerente'
+  ): Promise<{ success: boolean }> {
+    try {
+      // 1. Atualiza o status da venda para CANCELED no Supabase
+      const { error: saleError } = await supabase
+        .from('sales')
+        .update({
+          status: 'CANCELED',
+          notes: reason
+        })
+        .or(`id.eq.${saleId},invoice_number.eq.${saleId}`);
+
+      // 2. Devolve automaticamente cada produto ao estoque no Supabase
+      for (const item of items) {
+        try {
+          const { data: prodData } = await supabase
+            .from('products')
+            .select('stock')
+            .eq('id', item.productId)
+            .single();
+
+          if (prodData && typeof prodData.stock === 'number') {
+            const returnedStock = prodData.stock + item.quantity;
+            await supabase
+              .from('products')
+              .update({
+                stock: returnedStock,
+                status: returnedStock <= 0 ? 'out_of_stock' : returnedStock <= 5 ? 'low_stock' : 'active'
+              })
+              .eq('id', item.productId);
+          }
+        } catch (itemErr) {
+          console.warn('Erro ao repor estoque no Supabase:', itemErr);
+        }
+      }
+
+      return { success: !saleError };
+    } catch (err) {
+      console.warn('Supabase cancel sale notice:', err);
+      return { success: false };
+    }
+  },
+
   async updateProductStock(productId: string, newStock: number): Promise<boolean> {
     try {
       const { error } = await supabase

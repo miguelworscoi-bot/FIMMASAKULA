@@ -24,12 +24,17 @@ import {
   Check,
   Tag,
   SlidersHorizontal,
-  Package
+  Package,
+  RotateCcw,
+  ShieldAlert
 } from 'lucide-react';
 import { Product, CartItem, PaymentMethod, SaleTransaction, Customer } from '../../types';
 import { formatKz, formatDateTime } from '../../utils/formatters';
 import { supabaseService } from '../../services/supabaseService';
 import { ThermalReceipt } from '../ThermalReceipt';
+import SaleFeedbackModal from '../SaleFeedbackModal';
+import { useAuth } from '../../contexts/AuthContext';
+import { ManagerAuthModal } from '../auth/ManagerAuthModal';
 
 interface PosViewProps {
   products: Product[];
@@ -90,12 +95,31 @@ export const PosView: React.FC<PosViewProps> = ({
   // Feedback toast banner
   const [feedbackToast, setFeedbackToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
+  // Sale Feedback Modal (Happy/Sad Bag)
+  const [feedbackModal, setFeedbackModal] = useState<{
+    isOpen: boolean;
+    type: 'SUCCESS' | 'CANCELED' | null;
+    totalAmount: number;
+    changeAmount: number;
+  }>({
+    isOpen: false,
+    type: null,
+    totalAmount: 0,
+    changeAmount: 0,
+  });
+
   // Checkout & Payment Modal
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('cash');
   const [cashGiven, setCashGiven] = useState<string>('');
   const [lastCompletedSale, setLastCompletedSale] = useState<SaleTransaction | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Authentication & Refund Protection State
+  const { profile } = useAuth();
+  const [isManagerAuthOpen, setIsManagerAuthOpen] = useState(false);
+  const [pendingRefundSale, setPendingRefundSale] = useState<SaleTransaction | null>(null);
+  const [isRefunding, setIsRefunding] = useState(false);
 
   // References
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -197,13 +221,93 @@ export const PosView: React.FC<PosViewProps> = ({
     setCart(prev => prev.filter(item => item.product.id !== productId));
   };
 
-  // Clear Cart
-  const clearCart = () => {
-    if (cart.length === 0) return;
-    if (window.confirm('Tem certeza de que deseja limpar todos os itens do carrinho? [F4]')) {
-      setCart([]);
-      showFeedback('Carrinho de compras limpo.', 'info');
-      searchInputRef.current?.focus();
+  // Cenário 1: Antes da Venda (No Carrinho / Checkout)
+  // Cancela o atendimento atual, limpa os itens selecionados e reseta o formulário de pagamento.
+  // Permissão: Caixa ou Gerente (Livre). Ação no Banco: Nenhum impacto. Dispara modal "Pagamento Cancelado".
+  const handleCancelOrderBeforeSale = () => {
+    if (cart.length === 0 && !isCheckoutOpen) return;
+    const currentTotal = totalPayable;
+    setCart([]);
+    setIsCheckoutOpen(false);
+    setCashGiven('');
+    setGlobalDiscount(0);
+    setCustomerName('Consumidor Final');
+    setCustomerNif('');
+
+    setFeedbackModal({
+      isOpen: true,
+      type: 'CANCELED',
+      totalAmount: currentTotal,
+      changeAmount: 0,
+    });
+    showFeedback('Atendimento cancelado e formulário resetado.', 'info');
+    searchInputRef.current?.focus();
+  };
+
+  const clearCart = handleCancelOrderBeforeSale;
+
+  // Cenário 2: Depois da Venda (Estorno de Venda Concluída)
+  // Reverte a venda no histórico, devolve os produtos automaticamente ao estoque e marca a venda como CANCELED.
+  // Permissão: Requer Gerente (Perfil ou PIN de autorização). Ação no Banco: Executa procedure atômica no Supabase.
+  const handleRequestRefund = (sale: SaleTransaction) => {
+    if (sale.status === 'canceled') {
+      showFeedback('Esta venda já se encontra cancelada / estornada.', 'error');
+      return;
+    }
+
+    if (profile?.role === 'GERENTE') {
+      if (window.confirm(`Confirma o estorno da venda ${sale.invoiceNumber}? Os produtos serão devolvidos ao estoque e a venda marcada como CANCELED no banco de dados.`)) {
+        executeRefund(sale);
+      }
+    } else {
+      // Perfil CAIXA: Solicita autorização presencial do Gerente via PIN
+      setPendingRefundSale(sale);
+      setIsManagerAuthOpen(true);
+    }
+  };
+
+  const executeRefund = async (sale: SaleTransaction) => {
+    setIsRefunding(true);
+    try {
+      // 1. Devolve automaticamente cada produto ao estoque local
+      setProducts(prevProducts => {
+        return prevProducts.map(prod => {
+          const soldItem = sale.items.find(item => item.product.id === prod.id);
+          if (soldItem) {
+            const newStock = prod.stock + soldItem.quantity;
+            return {
+              ...prod,
+              stock: newStock,
+              status: (newStock <= 0 ? 'out_of_stock' : newStock <= prod.minStock ? 'low_stock' : 'active') as any
+            };
+          }
+          return prod;
+        });
+      });
+
+      // 2. Marca a venda como 'canceled' no estado local
+      setSales(prevSales => prevSales.map(s => s.id === sale.id ? { ...s, status: 'canceled' } : s));
+
+      if (lastCompletedSale && lastCompletedSale.id === sale.id) {
+        setLastCompletedSale(prev => prev ? { ...prev, status: 'canceled' } : null);
+      }
+
+      // 3. Executa procedure atômica no Supabase (devolve estoque e atualiza status para CANCELED)
+      await supabaseService.cancelOrRefundSale(
+        sale.id,
+        sale.items.map(item => ({ productId: item.product.id, quantity: item.quantity })),
+        `Estorno autorizado por ${profile?.full_name || 'Gerente'}`
+      );
+
+      playScannerBeep('success');
+      showFeedback(`Estorno da Venda ${sale.invoiceNumber} efetuado com sucesso! Estoque reposto.`, 'success');
+    } catch (err) {
+      console.error('Erro ao processar estorno:', err);
+      showFeedback('Erro ao comunicar estorno com o banco de dados.', 'error');
+    } finally {
+      setIsRefunding(false);
+      setPendingRefundSale(null);
+      setIsManagerAuthOpen(false);
     }
   };
 
@@ -377,6 +481,12 @@ export const PosView: React.FC<PosViewProps> = ({
     // 3. Finalize UI states
     playScannerBeep('success');
     setLastCompletedSale(newSale);
+    setFeedbackModal({
+      isOpen: true,
+      type: 'SUCCESS',
+      totalAmount: totalPayable,
+      changeAmount: selectedPayment === 'cash' ? changeDue : 0,
+    });
     setCart([]);
     setIsCheckoutOpen(false);
     setCashGiven('');
@@ -992,29 +1102,41 @@ export const PosView: React.FC<PosViewProps> = ({
             )}
 
             {/* Action Buttons */}
-            <div className="pt-2 flex items-center justify-end gap-2">
+            <div className="pt-2 flex items-center justify-between gap-2">
               <button
                 type="button"
-                onClick={() => setIsCheckoutOpen(false)}
-                className="px-4 py-2.5 rounded-2xl border border-gray-200 text-zinc-700 hover:bg-zinc-50 font-semibold"
+                onClick={handleCancelOrderBeforeSale}
+                className="px-3.5 py-2.5 rounded-2xl border border-rose-200 text-rose-700 hover:bg-rose-50 font-bold flex items-center gap-1.5 transition-colors"
+                title="Cancelar atendimento, limpar itens e resetar formulário"
               >
-                Voltar [ESC]
+                <Trash2 size={14} />
+                <span>Cancelar Atendimento</span>
               </button>
 
-              <button
-                id="btn-confirm-pos-sale"
-                type="button"
-                disabled={isSubmitting || (selectedPayment === 'cash' && cashGivenNum < totalPayable)}
-                onClick={handleCompleteSale}
-                className={`px-5 py-2.5 rounded-2xl font-extrabold shadow-sm flex items-center gap-2 transition-all ${
-                  isSubmitting || (selectedPayment === 'cash' && cashGivenNum < totalPayable)
-                    ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
-                    : 'bg-emerald-500 hover:bg-emerald-600 text-zinc-950 active:scale-98 cursor-pointer'
-                }`}
-              >
-                <CheckCircle2 size={16} />
-                <span>{isSubmitting ? 'A Registar...' : 'Confirmar & Emitir Talão'}</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCheckoutOpen(false)}
+                  className="px-4 py-2.5 rounded-2xl border border-gray-200 text-zinc-700 hover:bg-zinc-50 font-semibold"
+                >
+                  Voltar [ESC]
+                </button>
+
+                <button
+                  id="btn-confirm-pos-sale"
+                  type="button"
+                  disabled={isSubmitting || (selectedPayment === 'cash' && cashGivenNum < totalPayable)}
+                  onClick={handleCompleteSale}
+                  className={`px-5 py-2.5 rounded-2xl font-extrabold shadow-sm flex items-center gap-2 transition-all ${
+                    isSubmitting || (selectedPayment === 'cash' && cashGivenNum < totalPayable)
+                      ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
+                      : 'bg-emerald-500 hover:bg-emerald-600 text-zinc-950 active:scale-98 cursor-pointer'
+                  }`}
+                >
+                  <CheckCircle2 size={16} />
+                  <span>{isSubmitting ? 'A Registar...' : 'Confirmar & Emitir Talão'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1027,15 +1149,32 @@ export const PosView: React.FC<PosViewProps> = ({
         <div className="fixed inset-0 z-50 bg-zinc-950/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 space-y-4 animate-in zoom-in-95 duration-150 text-xs">
             <div className="text-center space-y-1">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2 shadow-sm">
-                <CheckCircle2 size={24} />
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 shadow-sm ${
+                lastCompletedSale.status === 'canceled'
+                  ? 'bg-rose-100 text-rose-600'
+                  : 'bg-emerald-100 text-emerald-600'
+              }`}>
+                {lastCompletedSale.status === 'canceled' ? <RotateCcw size={24} /> : <CheckCircle2 size={24} />}
               </div>
-              <h3 className="font-black text-base text-zinc-950">Venda Registada com Sucesso!</h3>
-              <p className="text-zinc-500 text-[11px]">Talão emitido e transmitido para a AGT</p>
+              <h3 className="font-black text-base text-zinc-950">
+                {lastCompletedSale.status === 'canceled' ? 'Venda Estornada / Cancelada' : 'Venda Registada com Sucesso!'}
+              </h3>
+              <p className="text-zinc-500 text-[11px]">
+                {lastCompletedSale.status === 'canceled'
+                  ? 'Estoque devolvido e venda anulada no sistema fiscal'
+                  : 'Talão emitido e transmitido para a AGT'}
+              </p>
             </div>
 
             {/* Thermal Receipt Preview (80mm standard format) */}
-            <div className="bg-zinc-50 p-4 rounded-2xl border border-gray-200 font-mono text-[10px] text-zinc-800 space-y-2.5 shadow-inner">
+            <div className="bg-zinc-50 p-4 rounded-2xl border border-gray-200 font-mono text-[10px] text-zinc-800 space-y-2.5 shadow-inner relative">
+              {lastCompletedSale.status === 'canceled' && (
+                <div className="absolute inset-0 bg-rose-50/80 backdrop-blur-[1px] rounded-2xl flex items-center justify-center pointer-events-none">
+                  <span className="border-2 border-rose-600 text-rose-600 font-black text-base px-4 py-1 rounded-xl rotate-[-12deg] uppercase tracking-widest">
+                    ANULADO / ESTORNO
+                  </span>
+                </div>
+              )}
               <div className="text-center border-b border-dashed border-gray-300 pb-2">
                 <p className="font-extrabold text-zinc-950 text-[11px]">MASAKULA TECH & RETAIL</p>
                 <p>NIF: 5417082910</p>
@@ -1097,31 +1236,72 @@ export const PosView: React.FC<PosViewProps> = ({
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-between gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  window.print();
-                }}
-                className="flex-1 py-2.5 rounded-2xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-bold flex items-center justify-center gap-1.5 transition-colors"
-              >
-                <Printer size={14} />
-                <span>Imprimir Talão</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setLastCompletedSale(null);
-                  searchInputRef.current?.focus();
-                }}
-                className="flex-1 py-2.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold transition-colors"
-              >
-                Nova Venda [ESC]
-              </button>
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.print();
+                  }}
+                  className="flex-1 py-2.5 rounded-2xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-bold flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <Printer size={14} />
+                  <span>Imprimir Talão</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLastCompletedSale(null);
+                    searchInputRef.current?.focus();
+                  }}
+                  className="flex-1 py-2.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold transition-colors"
+                >
+                  Nova Venda [ESC]
+                </button>
+              </div>
+
+              {/* Botão de Estorno Pós-Venda (Requer Gerente) */}
+              {lastCompletedSale.status !== 'canceled' && (
+                <button
+                  type="button"
+                  disabled={isRefunding}
+                  onClick={() => handleRequestRefund(lastCompletedSale)}
+                  className="w-full py-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold text-[11px] flex items-center justify-center gap-1.5 transition-colors"
+                  title="Devolver itens ao estoque e cancelar a venda (Requer Gerente)"
+                >
+                  <RotateCcw size={13} />
+                  <span>{isRefunding ? 'A Processar Estorno...' : 'Estornar Venda (Requer Gerente)'}</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
       )}
+
+      {/* Feedback Modal (Venda Feita / Pagamento Cancelado) */}
+      <SaleFeedbackModal
+        isOpen={feedbackModal.isOpen}
+        type={feedbackModal.type}
+        totalAmount={feedbackModal.totalAmount}
+        changeAmount={feedbackModal.changeAmount}
+        onClose={() => setFeedbackModal(prev => ({ ...prev, isOpen: false }))}
+      />
+
+      {/* Manager Authentication Modal for Protected Operations (Estorno) */}
+      <ManagerAuthModal
+        isOpen={isManagerAuthOpen}
+        title="Autorização para Estorno de Venda"
+        description="Esta operação fiscal anulará o documento de venda e devolverá todos os produtos automaticamente ao estoque no Supabase."
+        onSuccess={() => {
+          if (pendingRefundSale) {
+            executeRefund(pendingRefundSale);
+          }
+        }}
+        onCancel={() => {
+          setIsManagerAuthOpen(false);
+          setPendingRefundSale(null);
+        }}
+      />
 
       {/* Hidden printable receipt container for direct thermal printing */}
       {lastCompletedSale && (

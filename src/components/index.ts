@@ -19,6 +19,10 @@ export { PosView } from './views/PosView';
 export { ThermalReceipt } from './ThermalReceipt';
 export { CustomersView } from './views/CustomersView';
 export { ReportsView } from './views/ReportsView';
+export { default as ReportsScreen } from './ReportsScreen';
+export { default as VoidSaleModal } from './VoidSaleModal';
+export { default as SaleFeedbackModal } from './SaleFeedbackModal';
+export { default as ReportZModal, type ReportZData } from './ReportZModal';
 export { SettingsView } from './views/SettingsView';
 export { DashboardView } from './views/DashboardView';
 
