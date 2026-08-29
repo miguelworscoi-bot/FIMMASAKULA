@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AppFlowState, UserSession } from './types';
 import { LoginModal } from './components/auth/LoginModal';
 import { AppShell } from './components/layout/AppShell';
@@ -9,7 +10,7 @@ export function MasakulaSystem() {
   const [flowState, setFlowState] = useState<AppFlowState>('SPLASH');
 
   useEffect(() => {
-    setShowIntro(true);
+    //
   }, []);
 
   // Authenticated User Session
@@ -59,16 +60,6 @@ export function MasakulaSystem() {
 
   return (
     <div id="masakula-root-entry" className="min-h-screen bg-zinc-950 font-sans antialiased selection:bg-zinc-900 selection:text-white">
-<<<<<<< HEAD
-      {showIntro && (
-        <div className="fixed inset-0 z-50 bg-black">
-          <video
-            autoPlay
-            muted
-            playsInline
-            onEnded={() => setShowIntro(false)}
-            className="h-full w-full object-cover object-center"
-=======
       <AnimatePresence mode="wait">
         {flowState === 'SPLASH' && (
           <motion.div
@@ -94,24 +85,23 @@ export function MasakulaSystem() {
             exit={{ opacity: 0, filter: 'blur(4px)' }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             className="min-h-screen w-full bg-[#f8f9fa]"
->>>>>>> e3182b4e6f8ae9827c771e504980528be85db8ed
           >
-            <source src="/masakula-intro.mp4" type="video/mp4" />
-          </video>
-        </div>
-      )}
+            <LoginModal onLoginSuccess={handleLoginSuccess} />
+          </motion.div>
+        )}
 
-      {flowState === 'LOGIN' && (
-        <div className="min-h-screen w-full bg-[#f8f9fa]">
-          <LoginModal onLoginSuccess={handleLoginSuccess} />
-        </div>
-      )}
-
-      {flowState === 'APP_SHELL' && (
-        <div className="min-h-screen w-full">
-          <AppShell userSession={userSession} onLogout={handleLogout} />
-        </div>
-      )}
+        {flowState === 'APP_SHELL' && (
+          <motion.div
+            key="app"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="min-h-screen w-full"
+          >
+            <AppShell userSession={userSession} onLogout={handleLogout} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
