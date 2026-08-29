@@ -14,6 +14,7 @@ export { RoleGuard } from './RoleGuard';
 
 // View Submodules & Modals
 export { ProductsView } from './views/ProductsView';
+export { default as ProductsPage, ProductsPage as MasakulaProductsPage } from '../screens/ProductsPage';
 export { StockModal } from './views/StockModal';
 export { ServiceOrdersView, WorkOrdersView } from './views/ServiceOrdersView';
 export { PosView } from './views/PosView';
@@ -44,7 +45,25 @@ export { OnboardingView } from './intro/OnboardingView';
 // Supabase Instance & Services
 export { supabase } from '../lib/supabase';
 export { supabaseService } from '../services/supabaseService';
+export { productService } from '../services/productService';
+export { tauriHardwareService, isTauriEnvironment } from '../services/tauriHardwareService';
+export type { SerialPortInfo, SerialResponse, PrintReceiptOptions } from '../services/tauriHardwareService';
+export { GET as getProductsRoute, POST as createProductRoute, expressHandlers as productExpressHandlers } from '../api/products';
 
 // Custom & Lucide Icon Barrel
 export * from './icons';
+
+// Inventory & Stock Domain Types
+export type {
+  ProductType,
+  StockUnit,
+  MovementType,
+  AgtTaxRate,
+  Category,
+  Supplier,
+  ProductBatch,
+  Product as InventoryProduct,
+  CreateProductDTO,
+  ProductFilterParams
+} from '../types/inventory';
 

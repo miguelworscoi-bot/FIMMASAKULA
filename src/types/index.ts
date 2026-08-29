@@ -190,3 +190,17 @@ export interface CompanySettings {
   allowNegativeStock: boolean;
   soundAlerts: boolean;
 }
+
+// Inventory & Stock Management Domain Types
+export type { 
+  ProductType, 
+  StockUnit, 
+  MovementType, 
+  AgtTaxRate, 
+  Category, 
+  Supplier, 
+  ProductBatch, 
+  Product as InventoryProduct, 
+  CreateProductDTO, 
+  ProductFilterParams 
+} from './inventory';
