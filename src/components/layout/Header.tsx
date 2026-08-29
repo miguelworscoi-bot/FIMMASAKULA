@@ -158,13 +158,15 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={() => setActiveTab(activeTab === 'ai_engine' ? 'sales' : 'ai_engine')}
               title="Abrir Motor de IA e Previsão"
-              className={`p-2.5 rounded-2xl transition-all border cursor-pointer ${
+              className={`group p-2.5 rounded-2xl transition-all border cursor-pointer ${
                 activeTab === 'ai_engine'
                   ? 'bg-[#E1FB15] text-[#131313] border-[#E1FB15] shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]'
                   : 'bg-[#131313] text-[#E1FB15] border-white/10 hover:border-[#E1FB15]/50 shadow-[4px_4px_10px_rgba(0,0,0,0.5)]'
               }`}
             >
-              <BrainCircuit size={18} />
+              <div className="transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-12">
+                <BrainCircuit size={18} />
+              </div>
             </button>
 
             {activeTab !== 'pos' && activeTab !== 'sales' && (
@@ -175,9 +177,11 @@ export const Header: React.FC<HeaderProps> = ({
                   setActiveTab('pos');
                   if (onOpenQuickSale) onOpenQuickSale();
                 }}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white text-xs font-semibold shadow-xs hover:shadow transition-all cursor-pointer"
+                className="group flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white text-xs font-semibold shadow-xs hover:shadow transition-all cursor-pointer"
               >
-                <ShoppingCart size={15} className="text-emerald-400" />
+                <div className="transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-12">
+                  <ShoppingCart size={15} className="text-emerald-400" />
+                </div>
                 <span>Abrir PDV</span>
               </button>
             )}
@@ -190,9 +194,11 @@ export const Header: React.FC<HeaderProps> = ({
                   setActiveTab('services');
                   if (onOpenQuickOS) onOpenQuickOS();
                 }}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white hover:bg-zinc-50 border border-gray-200 text-zinc-800 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                className="group hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white hover:bg-zinc-50 border border-gray-200 text-zinc-800 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
               >
-                <Wrench size={14} className="text-amber-500" />
+                <div className="transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-12">
+                  <Wrench size={14} className="text-amber-500" />
+                </div>
                 <span>Nova O.S.</span>
               </button>
             )}

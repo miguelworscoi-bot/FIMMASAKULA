@@ -133,10 +133,12 @@ export default function NotificationsCenter({ onNavigateToProducts }: Notificati
         type="button"
         id="btn-notifications-center"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2.5 bg-white border border-gray-200 rounded-2xl hover:bg-zinc-50 transition shadow-xs flex items-center justify-center cursor-pointer"
+        className="group relative p-2.5 bg-white border border-gray-200 rounded-2xl hover:bg-zinc-50 transition shadow-xs flex items-center justify-center cursor-pointer"
         title="Central de Alertas"
       >
-        <Bell size={18} className="text-zinc-700" />
+        <div className="transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-12">
+          <Bell size={18} className="text-zinc-700" />
+        </div>
         {alerts.length > 0 && (
           <span className={`absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black text-white ${
             criticalCount > 0 ? 'bg-red-600 animate-pulse' : 'bg-amber-500'
@@ -160,18 +162,22 @@ export default function NotificationsCenter({ onNavigateToProducts }: Notificati
               <button
                 type="button"
                 onClick={fetchAlerts}
-                className="p-1.5 text-zinc-400 hover:text-zinc-700 rounded-lg transition-colors cursor-pointer"
+                className="group p-1.5 text-zinc-400 hover:text-zinc-700 rounded-lg transition-colors cursor-pointer"
                 title="Recarregar alertas"
               >
-                <RefreshCw size={14} className={loading ? 'animate-spin text-zinc-950' : ''} />
+                <div className="transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-12">
+                  <RefreshCw size={14} className={loading ? 'animate-spin text-zinc-950' : ''} />
+                </div>
               </button>
               <button 
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 text-zinc-400 hover:text-zinc-950 rounded-lg transition-colors cursor-pointer"
+                className="group p-1.5 text-zinc-400 hover:text-zinc-950 rounded-lg transition-colors cursor-pointer"
                 title="Fechar"
               >
-                <X size={16} />
+                <div className="transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-12">
+                  <X size={16} />
+                </div>
               </button>
             </div>
           </div>
@@ -245,9 +251,11 @@ export default function NotificationsCenter({ onNavigateToProducts }: Notificati
                   onNavigateToProducts();
                   setIsOpen(false);
                 }}
-                className="text-[11px] font-bold text-zinc-900 hover:underline cursor-pointer"
+                className="group text-[11px] font-bold text-zinc-900 hover:underline cursor-pointer"
               >
-                Gerir Estoque
+                <span className="inline-block transition-transform duration-200 group-hover:scale-105 group-hover:-rotate-3">
+                  Gerir Estoque
+                </span>
               </button>
             )}
           </div>
