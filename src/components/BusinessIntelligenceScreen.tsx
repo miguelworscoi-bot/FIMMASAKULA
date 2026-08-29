@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Sparkles, BrainCircuit, Search, RefreshCw, FileDown, CheckCircle } from 'lucide-react';
+import { Sparkles, BrainCircuit, Search, RefreshCw, FileDown, CheckCircle, Calculator, LineChart } from 'lucide-react';
 import { useDeadStock, type DeadStockItem } from '../hooks/useDeadStock';
 import { formatKz } from '../utils/formatters';
 import DeadStockDetectorSection from './DeadStockDetectorSection';
+import PriceSimulatorScreen from './PriceSimulatorScreen';
 import { generateIntelligencePDF } from '../utils/exportPdf';
 
 export interface MetricCardProps {
@@ -33,6 +34,7 @@ export function ClayMetricCard({ title, value, badge, type = 'positive' }: Metri
 }
 
 export default function BusinessIntelligenceScreen() {
+  const [activeSubTab, setActiveSubTab] = useState<'diagnostics' | 'simulator'>('diagnostics');
   const [query, setQuery] = useState('');
   const [loadingAI, setLoadingAI] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -150,60 +152,97 @@ export default function BusinessIntelligenceScreen() {
         </div>
       </div>
 
-      {/* Caixa de Consulta por Linguagem Natural */}
-      <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[8px_8px_20px_rgba(0,0,0,0.04),-8px_-8px_20px_rgba(255,255,255,1)] space-y-4">
-        <div className="flex items-center gap-2 text-xs font-bold text-gray-700">
-          <Sparkles size={16} className="text-[#131313]" />
-          <span>Pergunte ao Masakula: "O que está acontecendo com meu negócio?"</span>
+      {/* Navegação entre Submódulos de BI */}
+      <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('diagnostics')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
+            activeSubTab === 'diagnostics'
+              ? 'bg-[#131313] text-[#E1FB15] shadow-xs'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <BrainCircuit size={15} />
+          <span>Diagnóstico & Dead Stock</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('simulator')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
+            activeSubTab === 'simulator'
+              ? 'bg-[#131313] text-[#E1FB15] shadow-xs'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <Calculator size={15} />
+          <span>Simulador de Preços & Margens</span>
+        </button>
+      </div>
+
+      {activeSubTab === 'simulator' ? (
+        <div className="-mx-6 md:-mx-8 -my-6">
+          <PriceSimulatorScreen />
         </div>
-
-        <form onSubmit={handleAskAI} className="relative flex items-center">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Ex: 'Qual é o produto com maior margem?' ou 'O que tenho encalhado?'"
-            className="w-full bg-gray-50 text-[#131313] text-xs pl-11 pr-32 py-4 rounded-2xl border border-gray-200 focus:border-[#131313] outline-none font-medium placeholder:text-gray-400"
-          />
-          <Search className="absolute left-4 text-gray-400" size={18} />
-          
-          <button
-            type="submit"
-            disabled={loadingAI}
-            className="absolute right-2 px-5 py-2.5 bg-[#131313] text-[#E1FB15] font-black text-xs rounded-xl hover:bg-black transition flex items-center gap-2 shadow-sm cursor-pointer disabled:opacity-50"
-          >
-            <Sparkles size={14} />
-            {loadingAI ? 'Analisando...' : 'Consultar'}
-          </button>
-        </form>
-
-        {/* Resposta do Motor de IA */}
-        {aiInsight && (
-          <div className="p-4 bg-[#32D583]/10 border border-[#32D583]/40 rounded-2xl text-xs text-gray-800 flex items-start gap-3">
-            <Sparkles size={18} className="text-[#131313] shrink-0 mt-0.5" />
-            <div>
-              <p className="font-black text-[#131313] mb-0.5">Diagnóstico Automático:</p>
-              <p className="leading-relaxed font-medium">{aiInsight}</p>
+      ) : (
+        <>
+          {/* Caixa de Consulta por Linguagem Natural */}
+          <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[8px_8px_20px_rgba(0,0,0,0.04),-8px_-8px_20px_rgba(255,255,255,1)] space-y-4">
+            <div className="flex items-center gap-2 text-xs font-bold text-gray-700">
+              <Sparkles size={16} className="text-[#131313]" />
+              <span>Pergunte ao Masakula: "O que está acontecendo com meu negócio?"</span>
             </div>
+
+            <form onSubmit={handleAskAI} className="relative flex items-center">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Ex: 'Qual é o produto com maior margem?' ou 'O que tenho encalhado?'"
+                className="w-full bg-gray-50 text-[#131313] text-xs pl-11 pr-32 py-4 rounded-2xl border border-gray-200 focus:border-[#131313] outline-none font-medium placeholder:text-gray-400"
+              />
+              <Search className="absolute left-4 text-gray-400" size={18} />
+              
+              <button
+                type="submit"
+                disabled={loadingAI}
+                className="absolute right-2 px-5 py-2.5 bg-[#131313] text-[#E1FB15] font-black text-xs rounded-xl hover:bg-black transition flex items-center gap-2 shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                <Sparkles size={14} />
+                {loadingAI ? 'Analisando...' : 'Consultar'}
+              </button>
+            </form>
+
+            {/* Resposta do Motor de IA */}
+            {aiInsight && (
+              <div className="p-4 bg-[#32D583]/10 border border-[#32D583]/40 rounded-2xl text-xs text-gray-800 flex items-start gap-3">
+                <Sparkles size={18} className="text-[#131313] shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-black text-[#131313] mb-0.5">Diagnóstico Automático:</p>
+                  <p className="leading-relaxed font-medium">{aiInsight}</p>
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Cards Analíticos de Indicadores */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <ClayMetricCard title="Ticket Médio" value="14.500 Kz" badge="+8.2%" type="positive" />
-        <ClayMetricCard 
-          title="Capital em Dead Stock" 
-          value={formatKz(totalCapitalLocked > 0 ? totalCapitalLocked : 480000)} 
-          badge={`${deadStockItems.length} Itens`} 
-          type="warning" 
-        />
-        <ClayMetricCard title="Margem Bruta Média" value="38,5%" badge="+1.4%" type="positive" />
-        <ClayMetricCard title="Previsão de Recompra" value="4 Produtos" badge="Atenção" type="warning" />
-      </div>
+          {/* Cards Analíticos de Indicadores */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <ClayMetricCard title="Ticket Médio" value="14.500 Kz" badge="+8.2%" type="positive" />
+            <ClayMetricCard 
+              title="Capital em Dead Stock" 
+              value={formatKz(totalCapitalLocked > 0 ? totalCapitalLocked : 480000)} 
+              badge={`${deadStockItems.length} Itens`} 
+              type="warning" 
+            />
+            <ClayMetricCard title="Margem Bruta Média" value="38,5%" badge="+1.4%" type="positive" />
+            <ClayMetricCard title="Previsão de Recompra" value="4 Produtos" badge="Atenção" type="warning" />
+          </div>
 
-      {/* Detector e Tabela de Produtos Encalhados (Dead Stock) */}
-      <DeadStockDetectorSection />
+          {/* Detector e Tabela de Produtos Encalhados (Dead Stock) */}
+          <DeadStockDetectorSection />
+        </>
+      )}
     </div>
   );
 }

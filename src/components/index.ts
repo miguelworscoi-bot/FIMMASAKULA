@@ -28,8 +28,11 @@ export { default as ProductLabelPrintModal, type ProductLabelData } from './Prod
 export { default as CrossSellBanner, type SuggestedProduct, type CrossSellBannerProps } from './CrossSellBanner';
 export { default as BusinessIntelligenceScreen, BusinessIntelligenceScreen as MasakulaIntelligence } from './BusinessIntelligenceScreen';
 export { default as DeadStockDetectorSection, DeadStockDetectorSection as DeadStockDetector } from './DeadStockDetectorSection';
+export { default as PriceSimulatorScreen, PriceSimulatorScreen as PriceSimulator } from './PriceSimulatorScreen';
+export { default as AuditAndSecurityScreen, AuditAndSecurityScreen as AuditAndSecurity, type AuditLog } from './AuditAndSecurityScreen';
 export { generateIntelligencePDF, type IntelligenceReportData } from '../utils/exportPdf';
 export { useDeadStock, type DeadStockItem } from '../hooks/useDeadStock';
+export { usePermissions, type UserRole as PermissionsUserRole, type UserProfile as PermissionsUserProfile } from '../hooks/usePermissions';
 export { SettingsView } from './views/SettingsView';
 export { DashboardView } from './views/DashboardView';
 
@@ -41,3 +44,7 @@ export { OnboardingView } from './intro/OnboardingView';
 // Supabase Instance & Services
 export { supabase } from '../lib/supabase';
 export { supabaseService } from '../services/supabaseService';
+
+// Custom & Lucide Icon Barrel
+export * from './icons';
+

@@ -21,6 +21,7 @@ import {
 import { CompanySettings } from '../../types';
 import { useAuth, UserRole } from '../../contexts/AuthContext';
 import { PermissionMatrixModal } from '../auth/PermissionMatrixModal';
+import AuditAndSecurityScreen from '../AuditAndSecurityScreen';
 
 interface SettingsViewProps {
   settings: CompanySettings;
@@ -44,7 +45,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const { hasRole, profile } = useAuth();
   const isManager = hasRole(['GERENTE']);
 
-  const [activeTab, setActiveTab] = useState<'fiscal' | 'hardware' | 'users'>('fiscal');
+  const [activeTab, setActiveTab] = useState<'fiscal' | 'hardware' | 'users' | 'audit'>('fiscal');
   const [formData, setFormData] = useState<CompanySettings>({ ...settings });
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isMatrixOpen, setIsMatrixOpen] = useState(false);
@@ -199,6 +200,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               Restrito
             </span>
           )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('audit')}
+          className={`px-4 py-2 rounded-2xl font-bold text-xs transition-colors cursor-pointer flex items-center gap-2 ${
+            activeTab === 'audit'
+              ? 'bg-zinc-950 text-white'
+              : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+          }`}
+        >
+          <ShieldCheck size={15} />
+          <span>Governança & Auditoria</span>
         </button>
       </div>
 
@@ -579,6 +593,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* TAB 4: AUDIT & GOVERNANCE */}
+      {activeTab === 'audit' && (
+        <div className="-mx-4 -my-4">
+          <AuditAndSecurityScreen />
         </div>
       )}
 
