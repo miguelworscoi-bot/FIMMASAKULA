@@ -242,39 +242,49 @@ export default function ReportsScreen() {
             <span className="text-[10px] font-black bg-black text-[#E1FB15] px-2.5 py-1 rounded-lg">Colunas</span>
           </div>
 
-          {/* Renderização em Colunas de SVG */}
-          <div className="h-48 flex items-end justify-between gap-3 pt-6 pb-2 border-b border-gray-100 px-2">
-            {hourlyData.map((item, idx) => {
-              const heightPercent = Math.max((item.revenue / maxRevenue) * 100, 8);
-              const isHovered = activeBarHover === idx;
-
-              return (
-                <div 
-                  key={idx}
-                  className="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer relative"
-                  onMouseEnter={() => setActiveBarHover(idx)}
-                  onMouseLeave={() => setActiveBarHover(null)}
-                >
-                  {/* Tooltip de Valor em Hover */}
-                  {isHovered && (
-                    <div className="absolute -top-10 bg-[#131313] text-[#E1FB15] text-[10px] font-black py-1 px-2 rounded-lg shadow-lg whitespace-nowrap z-10">
-                      {item.revenue.toLocaleString()} Kz
-                    </div>
-                  )}
-
-                  {/* Barra / Coluna */}
-                  <div 
-                    style={{ height: `${heightPercent}%` }} 
-                    className={`w-full max-w-[36px] rounded-t-xl transition-all duration-300 ${
-                      isHovered ? 'bg-[#E1FB15] border-2 border-black' : 'bg-[#131313]'
-                    }`}
-                  />
-
-                  {/* Rótulo de Hora */}
-                  <span className="text-[10px] font-bold text-gray-400 mt-2">{item.hour}</span>
-                </div>
-              );
-            })}
+          {/* Renderização minimalista em linha */}
+          <div className="h-48 w-full border-b border-gray-100 px-1">
+            <svg viewBox="0 0 700 180" className="h-full w-full overflow-visible" role="img" aria-label="Evolução de vendas por hora">
+              <defs>
+                <linearGradient id="salesAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#131313" stopOpacity="0.1" />
+                  <stop offset="100%" stopColor="#131313" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              {[0, 0.5, 1].map((r, i) => {
+                const y = 24 + r * 118;
+                return <line key={i} x1="24" y1={y} x2="676" y2={y} stroke="#F1F5F9" strokeDasharray="3 4" />;
+              })}
+              {(() => {
+                const points = hourlyData.map((item, idx) => ({
+                  x: 24 + idx * (652 / Math.max(hourlyData.length - 1, 1)),
+                  y: 142 - (item.revenue / maxRevenue) * 118,
+                }));
+                const line = points.reduce((acc, point, idx) => {
+                  if (idx === 0) return `M ${point.x},${point.y}`;
+                  const previous = points[idx - 1];
+                  const midpoint = (previous.x + point.x) / 2;
+                  return `${acc} C ${midpoint},${previous.y} ${midpoint},${point.y} ${point.x},${point.y}`;
+                }, '');
+                const area = `${line} L 676,142 L 24,142 Z`;
+                return (
+                  <>
+                    <path d={area} fill="url(#salesAreaGrad)" />
+                    <path d={line} fill="none" stroke="#131313" strokeWidth="2.5" strokeLinecap="round" />
+                    {points.map((point, idx) => {
+                      const isHovered = activeBarHover === idx;
+                      return (
+                        <g key={hourlyData[idx].hour} onMouseEnter={() => setActiveBarHover(idx)} onMouseLeave={() => setActiveBarHover(null)} className="cursor-pointer">
+                          {isHovered && <text x={point.x} y={point.y - 14} textAnchor="middle" className="fill-gray-900 text-[10px] font-black">{hourlyData[idx].revenue.toLocaleString()} Kz</text>}
+                          <circle cx={point.x} cy={point.y} r={isHovered ? 5 : 3.5} fill={isHovered ? '#E1FB15' : '#131313'} stroke="#FFFFFF" strokeWidth="2" />
+                          <text x={point.x} y="166" textAnchor="middle" className="fill-gray-400 text-[10px] font-bold">{hourlyData[idx].hour}</text>
+                        </g>
+                      );
+                    })}
+                  </>
+                );
+              })()}
+            </svg>
           </div>
         </div>
 
