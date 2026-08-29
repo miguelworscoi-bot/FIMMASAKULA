@@ -1,5 +1,6 @@
 // Main System Export
 export { MasakulaSystem, default } from '../App';
+export { AnimatedIcon, type AnimationType } from './AnimatedIcon';
 
 // Layout Submodules
 export { Sidebar } from './layout/Sidebar';

@@ -178,13 +178,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onMouseEnter={() => setHoveredTab(item.id)}
                   onMouseLeave={() => setHoveredTab(null)}
                   aria-label={item.label}
-                  className={`p-2.5 rounded-2xl transition relative group cursor-pointer ${
+                  className={`group p-2.5 rounded-2xl transition relative cursor-pointer ${
                     isActive
                       ? 'bg-black text-white shadow-md'
                       : 'hover:bg-gray-100 text-gray-500 active:scale-95'
                   }`}
                 >
-                  <Icon size={20} />
+                  <div className="transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-12 group-hover:text-[#E1FB15]">
+                    <Icon
+                      size={20}
+                      className={isActive ? 'text-white' : 'text-current'}
+                    />
+                  </div>
 
                   {/* Notification Badge */}
                   {badgeText !== null && (
@@ -230,13 +235,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onMouseEnter={() => setHoveredTab(SETTINGS_ITEM.id)}
                 onMouseLeave={() => setHoveredTab(null)}
                 aria-label={SETTINGS_ITEM.label}
-                className={`p-2.5 rounded-2xl transition relative group cursor-pointer ${
+                className={`group p-2.5 rounded-2xl transition relative cursor-pointer ${
                   isActive
                     ? 'bg-black text-white shadow-md'
                     : 'text-gray-400 hover:bg-gray-100 active:scale-95'
                 }`}
               >
-                <Icon size={20} />
+                <div className="transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-12 group-hover:text-[#E1FB15]">
+                  <Icon
+                    size={20}
+                    className={isActive ? 'text-white' : 'text-current'}
+                  />
+                </div>
               </button>
 
               {/* Tooltip */}
