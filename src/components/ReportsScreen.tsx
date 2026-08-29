@@ -153,12 +153,15 @@ export default function ReportsScreen() {
     return { x, y, profit: d.profit, hour: d.hour };
   });
 
-  const pathD = linePoints.reduce(
-    (acc, pt, i) => (i === 0 ? `M ${pt.x},${pt.y}` : `${acc} L ${pt.x},${pt.y}`),
-    ''
-  );
+  const pathD = linePoints.reduce((acc, pt, i) => {
+    if (i === 0) return `M ${pt.x},${pt.y}`;
 
-  const areaD = linePoints.length > 0 
+    const previous = linePoints[i - 1];
+    const midpointX = (previous.x + pt.x) / 2;
+    return `${acc} C ${midpointX},${previous.y} ${midpointX},${pt.y} ${pt.x},${pt.y}`;
+  }, '');
+
+  const areaD = linePoints.length > 0
     ? `${pathD} L ${linePoints[linePoints.length - 1].x},${lineSvgHeight - linePadding} L ${linePoints[0].x},${lineSvgHeight - linePadding} Z`
     : '';
 
@@ -293,7 +296,7 @@ export default function ReportsScreen() {
             <svg viewBox={`0 0 ${lineSvgWidth} ${lineSvgHeight}`} className="w-full h-auto overflow-visible">
               <defs>
                 <linearGradient id="profitAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#32D583" stopOpacity="0.35" />
+                  <stop offset="0%" stopColor="#32D583" stopOpacity="0.18" />
                   <stop offset="100%" stopColor="#32D583" stopOpacity="0.0" />
                 </linearGradient>
               </defs>
@@ -307,8 +310,8 @@ export default function ReportsScreen() {
               {/* Área Sombreada */}
               <path d={areaD} fill="url(#profitAreaGrad)" />
 
-              {/* Linha Contínua */}
-              <path d={pathD} fill="none" stroke="#32D583" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Linha curva minimalista */}
+              <path d={pathD} fill="none" stroke="#32D583" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
               {/* Pontos de Interação por Hora */}
               {linePoints.map((pt, idx) => (
@@ -318,7 +321,7 @@ export default function ReportsScreen() {
                   onMouseEnter={() => setActiveLineHover(idx)}
                   onMouseLeave={() => setActiveLineHover(null)}
                 >
-                  <circle cx={pt.x} cy={pt.y} r="6" fill="#32D583" stroke="#FFFFFF" strokeWidth="2" />
+                  <circle cx={pt.x} cy={pt.y} r="4" fill="#32D583" stroke="#FFFFFF" strokeWidth="1.5" />
 
                   {/* Rótulo Eixo X */}
                   <text x={pt.x} y={lineSvgHeight - 8} textAnchor="middle" className="text-[10px] fill-gray-400 font-bold">
