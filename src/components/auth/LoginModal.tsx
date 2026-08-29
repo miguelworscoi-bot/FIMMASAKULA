@@ -28,12 +28,10 @@ import { PermissionMatrixModal } from './PermissionMatrixModal';
 
 interface LoginModalProps {
   onLoginSuccess: (session: UserSession) => void;
-  onBackToOnboarding: () => void;
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({
   onLoginSuccess,
-  onBackToOnboarding,
 }) => {
   const { signIn, switchRole, setProfile } = useAuth();
 
@@ -391,15 +389,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               >
                 <span>Continuar para Terminal & Caixa</span>
                 <ArrowRight size={16} />
-              </button>
-
-              <button
-                type="button"
-                onClick={onBackToOnboarding}
-                className="w-full py-2.5 rounded-2xl bg-zinc-100 hover:bg-zinc-200/70 text-zinc-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <ArrowLeft size={14} />
-                <span>Rever Apresentação / Onboarding</span>
               </button>
             </div>
           </form>

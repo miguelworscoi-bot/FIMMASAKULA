@@ -12,7 +12,6 @@ import {
   LogOut, 
   Sparkles, 
   ShieldCheck, 
-  RotateCcw,
   BrainCircuit
 } from 'lucide-react';
 import { ActiveTab, NavigationTab, UserSession } from '../../types';
@@ -101,7 +100,6 @@ interface SidebarProps {
   lowStockCount?: number;
   userSession?: UserSession;
   onLogout?: () => void;
-  onRestartIntro?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -111,7 +109,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   lowStockCount = 0,
   userSession,
   onLogout,
-  onRestartIntro,
 }) => {
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
 
@@ -251,27 +248,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           );
         })()}
-
-        {/* Restart / Replay Flow */}
-        {onRestartIntro && (
-          <div className="relative flex items-center justify-center w-full">
-            <button
-              type="button"
-              onClick={onRestartIntro}
-              onMouseEnter={() => setHoveredTab('restart-intro')}
-              onMouseLeave={() => setHoveredTab(null)}
-              title="Reiniciar Apresentação Masakula"
-              className="p-2.5 rounded-2xl text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition cursor-pointer"
-            >
-              <RotateCcw size={18} />
-            </button>
-            {hoveredTab === 'restart-intro' && (
-              <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 px-3 py-1.5 bg-black text-white text-[11px] font-bold rounded-md shadow-xl whitespace-nowrap pointer-events-none">
-                <span>Reiniciar Apresentação</span>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Logout Action */}
         {onLogout && (

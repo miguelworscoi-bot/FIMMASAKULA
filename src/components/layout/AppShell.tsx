@@ -54,7 +54,6 @@ import { supabaseService } from '../../services/supabaseService';
 interface AppShellProps {
   userSession?: UserSession;
   onLogout?: () => void;
-  onRestartIntro?: () => void;
 }
 
 export const TAB_METADATA: Record<ActiveTab, {
@@ -139,7 +138,6 @@ export const TAB_METADATA: Record<ActiveTab, {
 export const AppShell: React.FC<AppShellProps> = ({
   userSession,
   onLogout,
-  onRestartIntro,
 }) => {
   // 3. Gerenciador de estado central (activeTab)
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
@@ -424,7 +422,6 @@ export const AppShell: React.FC<AppShellProps> = ({
         pendingOrdersCount={openWorkOrdersCount}
         userSession={userSession}
         onLogout={onLogout}
-        onRestartIntro={onRestartIntro}
       />
 
       {/* Main Workspace Frame (ml-16 offset for 64px fixed sidebar) */}

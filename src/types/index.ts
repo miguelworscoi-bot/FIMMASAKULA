@@ -1,7 +1,4 @@
 export type AppFlowState = 
-  | 'SPLASH_1'
-  | 'SPLASH_2'
-  | 'ONBOARDING'
   | 'LOGIN'
   | 'APP_SHELL';
 

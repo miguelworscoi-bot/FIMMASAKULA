@@ -38,9 +38,7 @@ export { SettingsView } from './views/SettingsView';
 export { DashboardView } from './views/DashboardView';
 
 // Intro Submodules
-export { SplashOne } from './intro/SplashOne';
-export { SplashTwo } from './intro/SplashTwo';
-export { OnboardingView } from './intro/OnboardingView';
+
 
 // Supabase Instance & Services
 export { supabase } from '../lib/supabase';
