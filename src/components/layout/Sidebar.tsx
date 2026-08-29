@@ -184,7 +184,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       : 'hover:bg-gray-100 text-gray-500 active:scale-95'
                   }`}
                 >
-                  <div className="transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-12 group-hover:text-[#E1FB15]">
+                  <div className="transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-12">
                     <Icon
                       size={20}
                       className={isActive ? 'text-white' : 'text-current'}
@@ -241,7 +241,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     : 'text-gray-400 hover:bg-gray-100 active:scale-95'
                 }`}
               >
-                <div className="transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-12 group-hover:text-[#E1FB15]">
+                <div className="transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-12">
                   <Icon
                     size={20}
                     className={isActive ? 'text-white' : 'text-current'}
