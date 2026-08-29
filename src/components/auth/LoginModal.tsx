@@ -207,15 +207,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white" />
             </div>
             <div>
-              <div className="flex items-baseline gap-1.5">
-                <h1 className="font-extrabold text-base tracking-tight text-zinc-950">MASAKULA</h1>
-              </div>
+              <h1 className="font-extrabold text-base tracking-tight text-zinc-950">MASAKULA</h1>
               <p className="text-xs text-zinc-500 font-medium italic">
                 Um nome, várias soluções
               </p>
             </div>
           </div>
-
         </div>
 
         {/* Quick Role Selector Cards */}
