@@ -4,15 +4,16 @@ import {
   Package, 
   Wrench, 
   ShoppingCart, 
-  Coins,
-  TrendingDown,
+  Coins, 
+  TrendingDown, 
   Users, 
   BarChart3, 
-  Settings,
-  LogOut,
-  Sparkles,
-  ShieldCheck,
-  RotateCcw
+  Settings, 
+  LogOut, 
+  Sparkles, 
+  ShieldCheck, 
+  RotateCcw,
+  BrainCircuit
 } from 'lucide-react';
 import { ActiveTab, NavigationTab, UserSession } from '../../types';
 
@@ -74,6 +75,14 @@ export const MAIN_NAV_ITEMS: SidebarNavOption[] = [
     label: 'Relatórios',
     tooltip: 'Relatórios & Mapas Fiscais AGT',
     icon: BarChart3,
+  },
+  {
+    id: 'ai_engine',
+    label: 'Masakula AI',
+    tooltip: 'Diagnóstico Preditivo & Inteligência Artificial',
+    icon: BrainCircuit,
+    badge: 'AI',
+    badgeColor: 'bg-[#E1FB15] text-[#131313]',
   },
 ];
 

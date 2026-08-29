@@ -33,6 +33,7 @@ import { formatKz, formatDateTime } from '../../utils/formatters';
 import { supabaseService } from '../../services/supabaseService';
 import { ThermalReceipt } from '../ThermalReceipt';
 import SaleFeedbackModal from '../SaleFeedbackModal';
+import CrossSellBanner, { SuggestedProduct } from '../CrossSellBanner';
 import { useAuth } from '../../contexts/AuthContext';
 import { ManagerAuthModal } from '../auth/ManagerAuthModal';
 
@@ -87,7 +88,7 @@ export const PosView: React.FC<PosViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [customerName, setCustomerName] = useState('Consumidor Final');
+  const [customerName, setCustomerName] = useState('');
   const [customerNif, setCustomerNif] = useState('');
   const [globalDiscount, setGlobalDiscount] = useState<number>(0);
   const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
@@ -231,7 +232,7 @@ export const PosView: React.FC<PosViewProps> = ({
     setIsCheckoutOpen(false);
     setCashGiven('');
     setGlobalDiscount(0);
-    setCustomerName('Consumidor Final');
+    setCustomerName('');
     setCustomerNif('');
 
     setFeedbackModal({
@@ -423,6 +424,32 @@ export const PosView: React.FC<PosViewProps> = ({
     { label: '+20.000', add: 20000 },
   ];
 
+  // Dynamic Cross-Sell Suggestion
+  const crossSellSuggestion: SuggestedProduct | null = useMemo(() => {
+    if (cart.length === 0) return null;
+    const cartProductIds = new Set(cart.map((item) => item.product.id));
+    
+    // Suggest high-rotation or complementary product with stock available
+    const candidate = products.find(
+      (p) => !cartProductIds.has(p.id) && p.stock > 0
+    );
+
+    if (!candidate) return null;
+
+    return {
+      id: candidate.id,
+      name: candidate.name,
+      price: candidate.salePrice,
+    };
+  }, [cart, products]);
+
+  const handleAddCrossSell = (suggested: SuggestedProduct) => {
+    const productToAdd = products.find((p) => p.id === suggested.id);
+    if (productToAdd) {
+      addToCart(productToAdd, 1);
+    }
+  };
+
   // Complete Sale & Process Transaction
   const handleCompleteSale = async () => {
     if (cart.length === 0 || isSubmitting) return;
@@ -491,6 +518,8 @@ export const PosView: React.FC<PosViewProps> = ({
     setIsCheckoutOpen(false);
     setCashGiven('');
     setGlobalDiscount(0);
+    setCustomerName('');
+    setCustomerNif('');
     setIsSubmitting(false);
 
     // 4. Trigger auto-print if needed
@@ -745,36 +774,23 @@ export const PosView: React.FC<PosViewProps> = ({
               )}
             </div>
 
-            {/* Customer Identification in POS */}
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div>
-                <label className="text-[10px] uppercase font-bold text-zinc-400 block mb-0.5">Cliente</label>
-                <select
-                  value={customerName}
-                  onChange={(e) => {
-                    setCustomerName(e.target.value);
-                    const found = customers.find(c => c.name === e.target.value);
-                    if (found) setCustomerNif(found.nifOrBi);
-                  }}
-                  className="w-full px-2.5 py-1.5 rounded-xl bg-zinc-50 border border-gray-200 text-zinc-900 text-xs font-semibold focus:ring-1 focus:ring-zinc-950 focus:outline-none"
-                >
-                  <option value="Consumidor Final">Consumidor Final</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.name}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[10px] uppercase font-bold text-zinc-400 block mb-0.5">NIF (AGT)</label>
-                <input
-                  type="text"
-                  placeholder="Ex: 5409182736"
-                  value={customerNif}
-                  onChange={(e) => setCustomerNif(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-xl bg-zinc-50 border border-gray-200 text-zinc-900 text-xs font-semibold focus:ring-1 focus:ring-zinc-950 focus:outline-none"
-                />
-              </div>
+            {/* Identificação do Cliente (Opcional) */}
+            <div className="space-y-2 bg-gray-50 p-3 rounded-2xl">
+              <p className="text-[11px] font-black text-gray-700">Identificação do Cliente (Opcional)</p>
+              <input
+                type="text"
+                placeholder="Nome do Cliente (ex: Menor de Idade / Frequente)"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-zinc-950"
+              />
+              <input
+                type="text"
+                placeholder="NIF (Deixe vazio para Consumidor Final)"
+                value={customerNif}
+                onChange={(e) => setCustomerNif(e.target.value)}
+                className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-zinc-950"
+              />
             </div>
           </div>
 
@@ -847,6 +863,16 @@ export const PosView: React.FC<PosViewProps> = ({
               ))
             )}
           </div>
+
+          {/* Cross Sell Intelligence Banner */}
+          {cart.length > 0 && crossSellSuggestion && (
+            <div className="pb-1">
+              <CrossSellBanner
+                suggestion={crossSellSuggestion}
+                onAddToCart={handleAddCrossSell}
+              />
+            </div>
+          )}
 
           {/* Cart Calculation & Checkout Trigger */}
           <div className="pt-2.5 border-t border-gray-100 space-y-2.5 shrink-0">
@@ -969,7 +995,7 @@ export const PosView: React.FC<PosViewProps> = ({
               <div>
                 <h3 className="font-extrabold text-base text-zinc-950">Finalizar Venda & Checkout</h3>
                 <p className="text-[11px] text-zinc-400">
-                  Cliente: <span className="font-bold text-zinc-800">{customerName}</span> {customerNif && `(NIF: ${customerNif})`}
+                  Cliente: <span className="font-bold text-zinc-800">{customerName || 'Consumidor Final'}</span> {customerNif && `(NIF: ${customerNif})`}
                 </p>
               </div>
               <button

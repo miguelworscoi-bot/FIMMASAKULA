@@ -14,7 +14,8 @@ import {
   Clock,
   ArrowRight,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  BrainCircuit
 } from 'lucide-react';
 import { ActiveTab, NavigationTab, Product, WorkOrder, Customer, SaleTransaction, CompanySettings, UserSession, Expense, CashSession, CashMovement } from '../../types';
 import { Sidebar } from './Sidebar';
@@ -28,6 +29,7 @@ import { ExpensesView } from '../views/ExpensesView';
 import { CustomersView } from '../views/CustomersView';
 import { ReportsView } from '../views/ReportsView';
 import { SettingsView } from '../views/SettingsView';
+import { BusinessIntelligenceScreen } from '../BusinessIntelligenceScreen';
 import { 
   loadStoredProducts, 
   saveStoredProducts, 
@@ -124,6 +126,13 @@ export const TAB_METADATA: Record<ActiveTab, {
     statusMessage: 'Módulo pronto. Configurações da empresa, séries de faturação e dados fiscais.',
     icon: Settings,
     phase: 'Fase 1 • Operacional',
+  },
+  ai_engine: {
+    title: 'Masakula Intelligence',
+    subtitle: 'Diagnóstico preditivo, curva de vendas e motor de IA',
+    statusMessage: 'Motor de Inteligência Artificial ativo para diagnósticos preditivos e otimização de estoque.',
+    icon: BrainCircuit,
+    phase: 'Fase 1 • Inteligência Ativa',
   },
 };
 
@@ -389,6 +398,10 @@ export const AppShell: React.FC<AppShellProps> = ({
             setSettings={setSettings}
           />
         );
+      case 'ai_engine':
+        return (
+          <BusinessIntelligenceScreen />
+        );
       default:
         return null;
     }
@@ -404,7 +417,7 @@ export const AppShell: React.FC<AppShellProps> = ({
         activeTab={activeTab}
         setActiveTab={(tab) => {
           if (tab === 'services') setActiveTab('service_orders');
-          else if (tab === 'pos') setActiveTab('sales');
+          else if (tab === 'pos' || tab === 'pdv') setActiveTab('sales');
           else setActiveTab(tab as ActiveTab);
         }}
         lowStockCount={lowStockCount}
@@ -421,7 +434,7 @@ export const AppShell: React.FC<AppShellProps> = ({
           activeTab={activeTab}
           setActiveTab={(tab) => {
             if (tab === 'services') setActiveTab('service_orders');
-            else if (tab === 'pos') setActiveTab('sales');
+            else if (tab === 'pos' || tab === 'pdv') setActiveTab('sales');
             else setActiveTab(tab as ActiveTab);
           }}
           todaySalesTotal={todaySalesTotal}

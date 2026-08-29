@@ -11,7 +11,8 @@ import {
   Clock,
   Building2,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  BrainCircuit
 } from 'lucide-react';
 import { ActiveTab, NavigationTab } from '../../types';
 import { formatKz } from '../../utils/formatters';
@@ -89,6 +90,11 @@ export const Header: React.FC<HeaderProps> = ({
           title: 'Configurações',
           subtitle: 'Empresa, parâmetros AGT, moedas (Kz) e preferências do sistema',
         };
+      case 'ai_engine':
+        return {
+          title: 'Masakula Intelligence',
+          subtitle: 'Diagnóstico preditivo, curva de vendas e motor de IA',
+        };
       default:
         return { title: 'Masakula ERP', subtitle: 'Gestão comercial em Kz' };
     }
@@ -147,7 +153,21 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Quick Actions Button Group */}
           <div className="flex items-center gap-1.5">
-            {activeTab !== 'pos' && (
+            {/* Ícone Disparador do Motor de IA */}
+            <button
+              type="button"
+              onClick={() => setActiveTab(activeTab === 'ai_engine' ? 'sales' : 'ai_engine')}
+              title="Abrir Motor de IA e Previsão"
+              className={`p-2.5 rounded-2xl transition-all border cursor-pointer ${
+                activeTab === 'ai_engine'
+                  ? 'bg-[#E1FB15] text-[#131313] border-[#E1FB15] shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]'
+                  : 'bg-[#131313] text-[#E1FB15] border-white/10 hover:border-[#E1FB15]/50 shadow-[4px_4px_10px_rgba(0,0,0,0.5)]'
+              }`}
+            >
+              <BrainCircuit size={18} />
+            </button>
+
+            {activeTab !== 'pos' && activeTab !== 'sales' && (
               <button
                 id="btn-quick-pos"
                 type="button"
@@ -155,14 +175,14 @@ export const Header: React.FC<HeaderProps> = ({
                   setActiveTab('pos');
                   if (onOpenQuickSale) onOpenQuickSale();
                 }}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white text-xs font-semibold shadow-xs hover:shadow transition-all"
+                className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white text-xs font-semibold shadow-xs hover:shadow transition-all cursor-pointer"
               >
                 <ShoppingCart size={15} className="text-emerald-400" />
                 <span>Abrir PDV</span>
               </button>
             )}
 
-            {activeTab !== 'services' && (
+            {activeTab !== 'services' && activeTab !== 'service_orders' && (
               <button
                 id="btn-quick-os"
                 type="button"
@@ -170,7 +190,7 @@ export const Header: React.FC<HeaderProps> = ({
                   setActiveTab('services');
                   if (onOpenQuickOS) onOpenQuickOS();
                 }}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white hover:bg-zinc-50 border border-gray-200 text-zinc-800 text-xs font-semibold shadow-xs transition-colors"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white hover:bg-zinc-50 border border-gray-200 text-zinc-800 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
               >
                 <Wrench size={14} className="text-amber-500" />
                 <span>Nova O.S.</span>

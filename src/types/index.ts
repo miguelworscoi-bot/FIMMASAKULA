@@ -24,12 +24,14 @@ export type ActiveTab =
   | 'expenses'
   | 'customers'
   | 'reports'
-  | 'settings';
+  | 'settings'
+  | 'ai_engine';
 
 export type NavigationTab = 
   | ActiveTab
   | 'services'
-  | 'pos';
+  | 'pos'
+  | 'pdv';
 
 export interface CashSession {
   id: string;

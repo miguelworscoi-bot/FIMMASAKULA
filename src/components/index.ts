@@ -3,7 +3,8 @@ export { MasakulaSystem, default } from '../App';
 
 // Layout Submodules
 export { Sidebar } from './layout/Sidebar';
-export { Header } from './layout/Header';
+export { Header as LayoutHeader } from './layout/Header';
+export { Header, default as MasakulaHeader } from './Header';
 export { AppShell } from './layout/AppShell';
 export { NotificationsCenter } from './NotificationsCenter';
 
@@ -23,6 +24,12 @@ export { default as ReportsScreen } from './ReportsScreen';
 export { default as VoidSaleModal } from './VoidSaleModal';
 export { default as SaleFeedbackModal } from './SaleFeedbackModal';
 export { default as ReportZModal, type ReportZData } from './ReportZModal';
+export { default as ProductLabelPrintModal, type ProductLabelData } from './ProductLabelPrintModal';
+export { default as CrossSellBanner, type SuggestedProduct, type CrossSellBannerProps } from './CrossSellBanner';
+export { default as BusinessIntelligenceScreen, BusinessIntelligenceScreen as MasakulaIntelligence } from './BusinessIntelligenceScreen';
+export { default as DeadStockDetectorSection, DeadStockDetectorSection as DeadStockDetector } from './DeadStockDetectorSection';
+export { generateIntelligencePDF, type IntelligenceReportData } from '../utils/exportPdf';
+export { useDeadStock, type DeadStockItem } from '../hooks/useDeadStock';
 export { SettingsView } from './views/SettingsView';
 export { DashboardView } from './views/DashboardView';
 

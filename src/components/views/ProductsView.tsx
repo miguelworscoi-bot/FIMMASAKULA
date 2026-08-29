@@ -26,7 +26,8 @@ import {
   Sparkles,
   Lock,
   Eye,
-  ShieldCheck
+  ShieldCheck,
+  Printer
 } from 'lucide-react';
 import { Product, ProductStatus } from '../../types';
 import { formatKz } from '../../utils/formatters';
@@ -34,6 +35,7 @@ import { StockModal } from './StockModal';
 import { supabaseService } from '../../services/supabaseService';
 import { useAuth } from '../../contexts/AuthContext';
 import { PermissionMatrixModal } from '../auth/PermissionMatrixModal';
+import { ProductLabelPrintModal } from '../ProductLabelPrintModal';
 
 interface ProductsViewProps {
   products: Product[];
@@ -53,6 +55,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit' | 'stock_entry'>('stock_entry');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [printingLabelProduct, setPrintingLabelProduct] = useState<Product | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isMatrixOpen, setIsMatrixOpen] = useState(false);
   const [restrictedActionAlert, setRestrictedActionAlert] = useState<string | null>(null);
@@ -657,6 +660,14 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
+                            onClick={() => setPrintingLabelProduct(p)}
+                            className="p-2 rounded-xl transition-colors text-zinc-500 hover:text-black hover:bg-zinc-100 cursor-pointer"
+                            title="Imprimir Etiquetas / Código de Barras"
+                          >
+                            <Printer size={15} />
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => handleOpenModal('edit', p)}
                             className={`p-2 rounded-xl transition-colors cursor-pointer ${
                               isManager 
@@ -746,6 +757,17 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       <PermissionMatrixModal
         isOpen={isMatrixOpen}
         onClose={() => setIsMatrixOpen(false)}
+      />
+
+      {/* Modal de Impressão de Etiquetas */}
+      <ProductLabelPrintModal
+        product={printingLabelProduct ? {
+          name: printingLabelProduct.name,
+          price: printingLabelProduct.salePrice,
+          code: printingLabelProduct.barcode || printingLabelProduct.code || `MSK-${printingLabelProduct.id.slice(0, 6)}`
+        } : null}
+        isOpen={!!printingLabelProduct}
+        onClose={() => setPrintingLabelProduct(null)}
       />
     </div>
   );

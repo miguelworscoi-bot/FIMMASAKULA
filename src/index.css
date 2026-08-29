@@ -49,27 +49,36 @@ button, input, optgroup, select, textarea {
 }
 
 @media print {
-  /* Se a impressão for do Relatório Z */
-  body.printing-report-z * {
-    visibility: hidden !important;
+  /* Oculta toda a página de tela */
+  body * {
+    visibility: hidden;
   }
 
-  #printable-report-z,
-  #printable-report-z * {
-    visibility: visible !important;
+  /* Impressão de Talão Térmico */
+  #printable-thermal-receipt, #printable-thermal-receipt * {
+    visibility: visible;
   }
-
-  #printable-report-z {
+  #printable-thermal-receipt {
     position: absolute;
     left: 0;
     top: 0;
     width: 80mm;
-    margin: 0;
-    padding: 2mm 4mm;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 11px;
-    color: #000;
-    background: #fff;
+  }
+
+  /* Impressão do Relatório Z (A4) */
+  #printable-report-z, #printable-report-z * {
+    visibility: visible;
+  }
+  #printable-report-z {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  /* Impressão de Etiquetas */
+  #printable-product-label, #printable-product-label * {
+    visibility: visible;
   }
 }
 
