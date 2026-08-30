@@ -14,6 +14,7 @@ import { motion } from 'motion/react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { formatKz } from '../../utils/formatters';
 import { CreateGoalModal, NewGoalDTO } from '../admin/CreateGoalModal';
+import { TopProductsCarousel } from './TopProductsCarousel';
 
 // Dados simulados de desempenho temporal (Gráfico)
 const PERFORMANCE_DATA = [
@@ -294,7 +295,12 @@ export const GoalsView: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* 4. GRELHA: RANKING DA EQUIPA + GRÁFICO */}
+      {/* 4. TOP PRODUTOS MAIS VENDIDOS (CARROSSEL 3D) */}
+      <motion.div variants={item}>
+        <TopProductsCarousel onAddToCart={() => showToast('Produto adicionado ao PDV.')} />
+      </motion.div>
+
+      {/* 5. GRELHA: RANKING DA EQUIPA + GRÁFICO */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Ranking da equipa */}
         <motion.div
