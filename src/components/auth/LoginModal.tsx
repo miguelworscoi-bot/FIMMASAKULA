@@ -147,12 +147,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
       <div className="relative z-10 w-full max-w-6xl grid lg:grid-cols-[1.05fr_0.95fr] items-center gap-8 lg:gap-16">
         {/* Editorial brand panel inspired by the supplied reference */}
-        <section className="hidden lg:flex min-h-[680px] flex-col justify-between px-6 py-8" aria-label="Marca Masakula">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-zinc-950 flex items-center justify-center text-white font-black tracking-tighter">MK</div>
-            <span className="text-xl font-extrabold tracking-tight text-zinc-950">Masakula</span>
-          </div>
-
+        <section className="hidden lg:flex min-h-[680px] flex-col justify-center items-center px-6 py-8" aria-label="Marca Masakula">
           <div className="flex flex-col items-center gap-10">
             <div className="relative w-full max-w-[520px] h-[380px]">
               {/* Flores - topo esquerdo */}
@@ -170,11 +165,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               <p className="text-6xl font-black leading-[1.05] tracking-tight text-zinc-950">Masakula</p>
               <p className="mt-6 text-3xl font-black leading-[1.1] tracking-tight text-zinc-900">“Um nome,<br />várias soluções”</p>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2 text-xs font-semibold text-zinc-500">
-            <span className="h-2 w-2 rounded-full bg-[#E1FB15] ring-4 ring-[#E1FB15]/20" />
-            Gestão que acompanha o seu ritmo
           </div>
         </section>
 
@@ -522,27 +512,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             </div>
           </form>
         )}
-
-        {/* Quick Demo Accounts Footer Bar */}
-        <div className="pt-2 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-zinc-500">
-          <span className="font-medium">Credenciais Pré-configuradas:</span>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => handleQuickFill('GERENTE')}
-              className="px-2.5 py-1 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-semibold transition-colors cursor-pointer"
-            >
-              👑 Gerente Master
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickFill('CAIXA')}
-              className="px-2.5 py-1 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-semibold transition-colors cursor-pointer"
-            >
-              🏷️ Operador Caixa
-            </button>
-          </div>
-        </div>
         </div>
       </div>
 
