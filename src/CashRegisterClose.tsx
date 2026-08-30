@@ -33,8 +33,7 @@ export default function CashRegisterClose() {
       transfer: 50000,
     },
     vatBreakdown: [
-      { rate: 14, baseAmount: 350000, vatAmount: 49000 },
-      { rate: 0, baseAmount: 75000, vatAmount: 0, exemptionReason: 'Artigo 12.º do CIVA' },
+      { rate: 0, baseAmount: 425000, vatAmount: 0, exemptionReason: 'Operação sem incidência de IVA' },
     ],
   };
 

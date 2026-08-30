@@ -35,9 +35,15 @@ export class SaftAOXmlBuilder {
   public generateXml(): string {
     const dateCreated = new Date().toISOString().split("T")[0];
 
-    // Totais globais
-    const totalCredit = this.invoices.reduce((acc, inv) => acc + inv.netTotal, 0);
-    const totalDebit = 0; // Documentos de crédito de venda
+    // Totais globais (Faturas/Faturas-Recibo são Crédito; Notas de Crédito são Débito)
+    const totalCredit = this.invoices
+      .filter((inv) => inv.invoiceType === "FT" || inv.invoiceType === "FR")
+      .reduce((acc, inv) => acc + inv.netTotal, 0);
+
+    const totalDebit = this.invoices
+      .filter((inv) => inv.invoiceType === "NC")
+      .reduce((acc, inv) => acc + inv.netTotal, 0);
+
     const totalEntries = this.invoices.length;
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;

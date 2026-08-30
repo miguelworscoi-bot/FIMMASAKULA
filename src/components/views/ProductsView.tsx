@@ -36,6 +36,7 @@ import { supabaseService } from '../../services/supabaseService';
 import { useAuth } from '../../contexts/AuthContext';
 import { PermissionMatrixModal } from '../auth/PermissionMatrixModal';
 import { ProductLabelPrintModal } from '../ProductLabelPrintModal';
+import { ProductFormModal, ProductFormData } from '../ProductFormModal';
 
 interface ProductsViewProps {
   products: Product[];
@@ -53,6 +54,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [activeQuickFilter, setActiveQuickFilter] = useState<'all' | 'lowStock' | 'expiring'>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isNewProductModalOpen, setIsNewProductModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit' | 'stock_entry'>('stock_entry');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [printingLabelProduct, setPrintingLabelProduct] = useState<Product | null>(null);
@@ -270,23 +272,27 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             id="btn-new-stock-entry"
             type="button"
             onClick={() => handleOpenModal('stock_entry')}
-            className={`px-5 py-2.5 rounded-2xl font-semibold text-xs flex items-center gap-2 shadow-xs transition-all cursor-pointer ${
-              isManager
-                ? 'bg-zinc-950 hover:bg-zinc-800 text-white'
-                : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-600 border border-gray-200'
-            }`}
+            className="px-4 py-2.5 rounded-2xl font-semibold text-xs flex items-center gap-2 shadow-xs transition-all cursor-pointer bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border border-zinc-200"
           >
-            {isManager ? (
-              <>
-                <Plus size={16} className="text-amber-400" />
-                <span>Nova Entrada de Estoque</span>
-              </>
-            ) : (
-              <>
-                <Lock size={14} className="text-amber-600" />
-                <span>Entrada (Requer Gerente)</span>
-              </>
-            )}
+            <Plus size={15} className="text-zinc-600" />
+            <span>Entrada de Estoque</span>
+          </button>
+
+          {/* Botão Principal: Novo Produto */}
+          <button
+            id="btn-new-product"
+            type="button"
+            onClick={() => {
+              if (!isManager) {
+                setRestrictedActionAlert('O cadastro de novos produtos e artigos no catálogo requer perfil GERENTE.');
+                return;
+              }
+              setIsNewProductModalOpen(true);
+            }}
+            className="px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center gap-2 shadow-xs transition-all cursor-pointer bg-[#E1FB15] hover:bg-[#d6f00f] text-black"
+          >
+            <Plus size={16} className="stroke-[3]" />
+            <span>+ Novo Produto</span>
           </button>
         </div>
       </div>
@@ -563,17 +569,35 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                     <tr key={p.id} className="hover:bg-zinc-50/70 transition-colors group">
                       {/* COLUNA 1: Produto / SKU */}
                       <td className="py-3.5 px-4">
-                        <div className="font-bold text-zinc-950 text-sm">{p.name}</div>
-                        <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-0.5">
-                          <span className="font-mono text-zinc-600 font-semibold">{p.sku}</span>
-                          <span>•</span>
-                          <span className="text-zinc-500">{p.category}</span>
-                          {p.barcode && (
-                            <>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-zinc-50 border border-gray-200/80 flex items-center justify-center shrink-0 p-1 overflow-hidden">
+                            {p.imageUrl ? (
+                              <img
+                                src={p.imageUrl}
+                                alt={p.name}
+                                referrerPolicy="no-referrer"
+                                className="max-h-8 w-auto object-contain pointer-events-none"
+                              />
+                            ) : (
+                              <span className="font-bold text-xs text-zinc-400">
+                                {p.name ? p.name.charAt(0).toUpperCase() : 'P'}
+                              </span>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-bold text-zinc-950 text-sm truncate max-w-xs">{p.name}</div>
+                            <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-0.5">
+                              <span className="font-mono text-zinc-600 font-semibold">{p.sku}</span>
                               <span>•</span>
-                              <span className="font-mono text-[10px] text-zinc-400">{p.barcode}</span>
-                            </>
-                          )}
+                              <span className="text-zinc-500">{p.category}</span>
+                              {p.barcode && (
+                                <>
+                                  <span>•</span>
+                                  <span className="font-mono text-[10px] text-zinc-400">{p.barcode}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </td>
 
@@ -700,6 +724,40 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
         productToEdit={editingProduct}
         mode={modalMode}
       />
+
+      {/* 6. MODAL DE CADASTRO DE NOVO PRODUTO COM IMAGEM */}
+      {isNewProductModalOpen && (
+        <ProductFormModal
+          onClose={() => setIsNewProductModalOpen(false)}
+          onSave={(formData: ProductFormData) => {
+            const newProd: Product = {
+              id: `prod-${Date.now()}`,
+              name: formData.name,
+              sku: `MSK-${Math.floor(1000 + Math.random() * 9000)}`,
+              barcode: `560${Math.floor(1000000000 + Math.random() * 9000000000)}`,
+              category: formData.category || 'Geral',
+              saleType: 'Unidade',
+              supplier: '',
+              batch: `LOTE-${new Date().getFullYear()}`,
+              expirationDate: '',
+              notes: '',
+              costPrice: formData.price * 0.7,
+              salePrice: formData.price,
+              stock: 0,
+              minStock: 5,
+              unit: 'un',
+              status: 'active',
+              imageUrl: formData.imageUrl,
+              updatedAt: new Date().toISOString().split('T')[0],
+            };
+
+            setProducts(prev => [newProd, ...prev]);
+            showToast(`Produto "${formData.name}" cadastrado com sucesso!`);
+            supabaseService.insertProduct(newProd).catch(err => console.warn('Supabase sync:', err));
+            setIsNewProductModalOpen(false);
+          }}
+        />
+      )}
 
       {/* Modal de Alerta de Ação Restrita da Matriz */}
       {restrictedActionAlert && (

@@ -9,3 +9,18 @@ export {
   GET as getSaftRoute,
   expressSaftHandler,
 } from './saft';
+
+export {
+  POST as onboardingRoute,
+  provisionTenant,
+  expressOnboardingHandler,
+  type TenantProvisioningPayload,
+  type TenantProvisioningResult,
+} from './onboarding';
+
+export {
+  POST as uploadProductImageRoute,
+  uploadProductImage,
+  expressUploadHandler,
+  type ProductImageUploadResult,
+} from './upload/product-image';

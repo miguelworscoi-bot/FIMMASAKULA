@@ -109,6 +109,10 @@ export const PosView: React.FC<PosViewProps> = ({
     changeAmount: 0,
   });
 
+  // Interactive card click feedback & image error fallbacks
+  const [recentlyAddedIds, setRecentlyAddedIds] = useState<Record<string, boolean>>({});
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+
   // Checkout & Payment Modal
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('cash');
@@ -194,6 +198,13 @@ export const PosView: React.FC<PosViewProps> = ({
       showFeedback(`"${product.name}" adicionado ao carrinho!`, 'success');
       return [...prev, { product, quantity: quantityToAdd }];
     });
+
+    if (addedSuccessfully) {
+      setRecentlyAddedIds(prev => ({ ...prev, [product.id]: true }));
+      setTimeout(() => {
+        setRecentlyAddedIds(prev => ({ ...prev, [product.id]: false }));
+      }, 1500);
+    }
 
     return addedSuccessfully;
   };
@@ -407,8 +418,8 @@ export const PosView: React.FC<PosViewProps> = ({
   }, [subtotal, globalDiscount, discountType]);
 
   const taxableAmount = Math.max(0, subtotal - discountAmount);
-  const taxAmount = Math.round(taxableAmount * 0.14); // IVA 14% Angola
-  const totalPayable = taxableAmount + taxAmount;
+  const taxAmount = 0; // Sem IVA
+  const totalPayable = taxableAmount;
 
   const cashGivenNum = parseFloat(cashGiven) || 0;
   const changeDue = Math.max(0, cashGivenNum - totalPayable);
@@ -665,22 +676,27 @@ export const PosView: React.FC<PosViewProps> = ({
                   const isOut = product.stock <= 0;
                   const isLow = product.stock <= product.minStock;
                   const inCartItem = cart.find(ci => ci.product.id === product.id);
+                  const isJustAdded = !!recentlyAddedIds[product.id];
+                  const hasImageError = !!imageErrors[product.id];
+                  const imageSrc = !hasImageError && product.imageUrl ? product.imageUrl : null;
 
                   return (
                     <div
                       key={product.id}
                       onClick={() => !isOut && addToCart(product)}
-                      className={`relative p-3.5 rounded-2xl border transition-all flex flex-col justify-between select-none ${
+                      className={`group relative p-3.5 rounded-2xl border transition-all duration-200 flex flex-col justify-between select-none ${
                         isOut
                           ? 'bg-zinc-50 border-gray-200 opacity-60 cursor-not-allowed'
+                          : isJustAdded
+                          ? 'bg-emerald-50/70 border-[#32D583] shadow-md ring-2 ring-[#32D583]/30 scale-[0.98] cursor-pointer'
                           : inCartItem
-                          ? 'bg-emerald-50/40 border-emerald-300 shadow-xs hover:shadow-md cursor-pointer active:scale-97'
-                          : 'bg-white border-gray-100 hover:border-zinc-300 hover:shadow-sm cursor-pointer active:scale-97'
+                          ? 'bg-emerald-50/40 border-emerald-300 shadow-xs hover:shadow-md cursor-pointer active:scale-[0.98]'
+                          : 'bg-white border-gray-100 hover:border-zinc-300 hover:shadow-md cursor-pointer active:scale-[0.98]'
                       }`}
                     >
                       {/* In-cart indicator badge */}
                       {inCartItem && (
-                        <div className="absolute -top-2 -right-2 bg-emerald-600 text-white w-6 h-6 rounded-full text-[11px] font-black flex items-center justify-center shadow-sm border-2 border-white">
+                        <div className="absolute -top-2 -right-2 bg-emerald-600 text-white w-6 h-6 rounded-full text-[11px] font-black flex items-center justify-center shadow-sm border-2 border-white animate-in zoom-in-50 duration-200 z-10">
                           {inCartItem.quantity}
                         </div>
                       )}
@@ -688,7 +704,7 @@ export const PosView: React.FC<PosViewProps> = ({
                       <div>
                         {/* Top Category & Stock Badge */}
                         <div className="flex items-center justify-between gap-1 mb-1.5">
-                          <span className="text-[10px] font-bold text-zinc-400 truncate max-w-[90px]">
+                          <span className="text-[10px] font-bold text-zinc-400 truncate max-w-[90px] uppercase tracking-wider">
                             {product.category || 'Geral'}
                           </span>
                           <span
@@ -704,35 +720,67 @@ export const PosView: React.FC<PosViewProps> = ({
                           </span>
                         </div>
 
+                        {/* Área da Imagem Cadastrada do Produto (PNG sem fundo) */}
+                        <div className="relative w-full h-24 mb-2 flex items-center justify-center rounded-xl bg-zinc-50/80 p-1.5 group-hover:bg-zinc-100/70 transition-colors">
+                          {imageSrc ? (
+                            <img
+                              src={imageSrc}
+                              alt={product.name}
+                              referrerPolicy="no-referrer"
+                              onError={() => setImageErrors(prev => ({ ...prev, [product.id]: true }))}
+                              className="max-h-20 w-auto object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-110 pointer-events-none"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-zinc-100 rounded-xl flex items-center justify-center text-zinc-400 font-bold text-base border border-zinc-200/60 shadow-2xs">
+                              {product.name ? product.name.charAt(0).toUpperCase() : 'P'}
+                            </div>
+                          )}
+                        </div>
+
                         {/* Title & SKU */}
-                        <h4 className="font-bold text-xs text-zinc-900 line-clamp-2 leading-snug">
+                        <h4 className="font-bold text-xs text-zinc-900 line-clamp-2 leading-snug" title={product.name}>
                           {product.name}
                         </h4>
                         
                         <p className="text-[10px] font-mono text-zinc-400 mt-1 flex items-center gap-1">
                           <Barcode size={10} />
-                          <span className="truncate">{product.barcode}</span>
+                          <span className="truncate">{product.barcode || product.sku}</span>
                         </p>
                       </div>
 
-                      {/* Price & Quick Add Button */}
+                      {/* Price & Quick Add Button com Efeito Interativo */}
                       <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between">
                         <div>
                           <span className="font-black text-xs text-zinc-950 block">
                             {formatKz(product.salePrice)}
                           </span>
                         </div>
-                        <div 
-                          className={`w-7 h-7 rounded-xl flex items-center justify-center transition-colors ${
+                        <button
+                          type="button"
+                          disabled={isOut}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!isOut) addToCart(product);
+                          }}
+                          className={`flex items-center justify-center transition-all duration-200 cursor-pointer ${
                             isOut
-                              ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
+                              ? 'w-7 h-7 rounded-xl bg-zinc-200 text-zinc-400 cursor-not-allowed'
+                              : isJustAdded
+                              ? 'px-2.5 h-7 rounded-xl bg-[#32D583] text-black font-bold text-[11px] gap-1 shadow-sm scale-105'
                               : inCartItem
-                              ? 'bg-emerald-600 text-white'
-                              : 'bg-zinc-950 text-white hover:bg-zinc-800'
+                              ? 'w-7 h-7 rounded-xl bg-emerald-600 hover:bg-[#32D583] hover:text-black text-white'
+                              : 'w-7 h-7 rounded-xl bg-black hover:bg-[#32D583] hover:text-black text-white active:scale-90'
                           }`}
                         >
-                          <Plus size={15} />
-                        </div>
+                          {isJustAdded ? (
+                            <>
+                              <Check size={13} className="stroke-[3]" />
+                              <span className="text-[10px]">Add</span>
+                            </>
+                          ) : (
+                            <Plus size={15} className="stroke-[2.5]" />
+                          )}
+                        </button>
                       </div>
                     </div>
                   );
@@ -812,6 +860,22 @@ export const PosView: React.FC<PosViewProps> = ({
                   key={item.product.id}
                   className="p-2.5 rounded-2xl bg-zinc-50 border border-gray-100 flex items-center justify-between gap-2.5 text-xs hover:bg-zinc-100/70 transition-colors"
                 >
+                  {/* Miniatura do Produto no Carrinho */}
+                  <div className="w-10 h-10 rounded-xl bg-white border border-gray-200/80 flex items-center justify-center shrink-0 p-1 overflow-hidden">
+                    {item.product.imageUrl ? (
+                      <img
+                        src={item.product.imageUrl}
+                        alt={item.product.name}
+                        referrerPolicy="no-referrer"
+                        className="max-h-8 w-auto object-contain pointer-events-none"
+                      />
+                    ) : (
+                      <span className="font-bold text-xs text-zinc-400">
+                        {item.product.name ? item.product.name.charAt(0).toUpperCase() : 'P'}
+                      </span>
+                    )}
+                  </div>
+
                   <div className="flex-1 min-w-0">
                     <h5 className="font-bold text-zinc-900 truncate leading-tight">{item.product.name}</h5>
                     <div className="flex items-center gap-2 mt-0.5">
@@ -925,11 +989,6 @@ export const PosView: React.FC<PosViewProps> = ({
                 </span>
               </div>
 
-              <div className="flex justify-between text-zinc-500">
-                <span>IVA Geral (14%):</span>
-                <span className="font-semibold text-zinc-800">{formatKz(taxAmount)}</span>
-              </div>
-
               {/* Total Final */}
               <div className="flex justify-between items-center text-sm font-black text-zinc-950 pt-1.5 border-t border-gray-100">
                 <span>Total a Cobrar:</span>
@@ -1013,7 +1072,7 @@ export const PosView: React.FC<PosViewProps> = ({
               <span className="text-[10px] text-zinc-400 uppercase font-extrabold tracking-wider">Total a Pagar</span>
               <div className="text-3xl font-black text-emerald-400">{formatKz(totalPayable)}</div>
               <div className="text-[11px] text-zinc-400">
-                Subtotal: {formatKz(subtotal)} • IVA (14%): {formatKz(taxAmount)}
+                Subtotal: {formatKz(subtotal)} {discountAmount > 0 && `• Desconto: -${formatKz(discountAmount)}`}
               </div>
             </div>
 
@@ -1240,10 +1299,6 @@ export const PosView: React.FC<PosViewProps> = ({
                     <span>-{formatKz(lastCompletedSale.discount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between">
-                  <span>IVA Geral (14%):</span>
-                  <span>{formatKz(lastCompletedSale.tax)}</span>
-                </div>
                 <div className="flex justify-between font-black text-xs text-zinc-950 pt-1 border-t border-gray-300">
                   <span>TOTAL KZ:</span>
                   <span>{formatKz(lastCompletedSale.total)}</span>

@@ -70,7 +70,7 @@ export class ESCPOSBuilder {
 // Serviço de Execução dos Periféricos
 export const HardwareService = {
   async triggerCashDrawer(portName = "COM1", baudRate = 9600): Promise<void> {
-    if (typeof window !== "undefined" && ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)) {
+    if (typeof window !== "undefined" && ("__TAURI_INTERNALS__" in (window as unknown as Record<string, unknown>) || "__TAURI__" in (window as unknown as Record<string, unknown>))) {
       await invoke("open_cash_drawer", { portName, baudRate });
     } else {
       console.warn("Ambiente Web: Abertura direta de gaveta requer runtime Desktop.");
@@ -107,7 +107,6 @@ export const HardwareService = {
     builder
       .line("-")
       .row("Subtotal:", `${receipt.subtotal.toLocaleString()} Kz`)
-      .row("Imposto (IVA 14%):", `${receipt.tax.toLocaleString()} Kz`)
       .bold(true)
       .row("TOTAL:", `${receipt.total.toLocaleString()} Kz`)
       .bold(false)
@@ -120,7 +119,7 @@ export const HardwareService = {
     const payload = Array.from(builder.build());
 
     // Dispatch Desktop vs Web Fallback
-    if (typeof window !== "undefined" && ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)) {
+    if (typeof window !== "undefined" && ("__TAURI_INTERNALS__" in (window as unknown as Record<string, unknown>) || "__TAURI__" in (window as unknown as Record<string, unknown>))) {
       await invoke("print_escpos_raw", {
         portName,
         baudRate,

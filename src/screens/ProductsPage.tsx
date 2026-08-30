@@ -2,7 +2,9 @@
 
 import React, { useState } from "react";
 import { BoxIcon, BoxesIcon, DeleteIcon, CogIcon } from "@/components/icons";
+import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ProductFormModal, ProductFormData } from "@/components/ProductFormModal";
 
 // Mock para pré-visualização da interface
 const MOCK_PRODUCTS = [
@@ -48,16 +50,36 @@ const MOCK_PRODUCTS = [
 ];
 
 export default function ProductsPage() {
+  const [productsList, setProductsList] = useState(MOCK_PRODUCTS);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterLowStock, setFilterLowStock] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const filteredProducts = MOCK_PRODUCTS.filter((product) => {
+  const filteredProducts = productsList.filter((product) => {
     const matchesSearch =
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.sku.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStock = filterLowStock ? product.current_stock <= product.min_stock : true;
     return matchesSearch && matchesStock;
   });
+
+  const handleSaveNewProduct = (formData: ProductFormData) => {
+    const newProduct = {
+      id: String(Date.now()),
+      name: formData.name,
+      sku: `MSK-${Math.floor(1000 + Math.random() * 9000)}`,
+      barcode: `560${Math.floor(1000000000 + Math.random() * 9000000000)}`,
+      category: formData.category || "Geral",
+      cost_price: formData.price * 0.7,
+      selling_price: formData.price,
+      current_stock: 0,
+      min_stock: 5,
+      tax_rate: "NOR_14",
+      is_active: true,
+    };
+    setProductsList([newProduct, ...productsList]);
+    setIsModalOpen(false);
+  };
 
   return (
     <div className="flex flex-col gap-6 p-6 bg-[#131313] text-white min-h-screen">
@@ -70,15 +92,27 @@ export default function ProductsPage() {
           <div>
             <h1 className="text-xl font-bold">Gestão de Produtos</h1>
             <p className="text-xs text-neutral-400">
-              Catálogo de artigos, preços, taxas AGT e controlo de estoque
+              Catálogo de artigos, preços de venda e controlo de estoque
             </p>
           </div>
         </div>
 
-        <button className="flex items-center gap-2 rounded-xl bg-[#E1FB15] px-4 py-2.5 text-xs font-bold text-black shadow-lg shadow-[#E1FB15]/20 hover:bg-[#d6f00f] transition-all cursor-pointer">
-          <span>+ Cadastrar Produto</span>
+        <button
+          type="button"
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 rounded-xl bg-[#E1FB15] px-4 py-2.5 text-xs font-bold text-black shadow-lg shadow-[#E1FB15]/20 hover:bg-[#d6f00f] transition-all cursor-pointer"
+        >
+          <Plus className="w-4 h-4 stroke-[3]" />
+          <span>+ Novo Produto</span>
         </button>
       </div>
+
+      {isModalOpen && (
+        <ProductFormModal
+          onClose={() => setIsModalOpen(false)}
+          onSave={handleSaveNewProduct}
+        />
+      )}
 
       {/* Métricas Rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -148,7 +182,6 @@ export default function ProductsPage() {
               <th className="px-4 py-3">Preço Custo</th>
               <th className="px-4 py-3">Preço Venda</th>
               <th className="px-4 py-3">Estoque</th>
-              <th className="px-4 py-3">Taxa AGT</th>
               <th className="px-4 py-3 text-right">Ações</th>
             </tr>
           </thead>
@@ -183,11 +216,6 @@ export default function ProductsPage() {
                       )}
                     >
                       {product.current_stock} Unid.
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="rounded bg-neutral-800 px-1.5 py-0.5 text-[10px] font-mono text-neutral-400">
-                      14% (IVA)
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">

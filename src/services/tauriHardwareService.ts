@@ -37,8 +37,37 @@ export interface PrintReceiptOptions {
 
 // Verifica se está rodando dentro do ambiente Desktop Tauri
 export const isTauriEnvironment = (): boolean => {
-  return typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window);
+  return (
+    typeof window !== 'undefined' &&
+    ('__TAURI_INTERNALS__' in (window as unknown as Record<string, unknown>) ||
+      '__TAURI__' in (window as unknown as Record<string, unknown>))
+  );
 };
+
+/**
+ * Utilitário para invocar comandos no backend Rust (Tauri 1.x e 2.x)
+ */
+export async function invokeTauri<T = unknown>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  const win = typeof window !== 'undefined' ? (window as unknown as Record<string, any>) : {};
+
+  if ('__TAURI_INTERNALS__' in (window as unknown as Record<string, unknown>)) {
+    if (typeof win.__TAURI_INTERNALS__?.invoke === 'function') {
+      return await win.__TAURI_INTERNALS__.invoke(cmd, args);
+    }
+  }
+
+  if (win.__TAURI__?.core?.invoke) {
+    return await win.__TAURI__.core.invoke(cmd, args);
+  }
+  if (win.__TAURI__?.tauri?.invoke) {
+    return await win.__TAURI__.tauri.invoke(cmd, args);
+  }
+  if (typeof win.__TAURI_INVOKE__ === 'function') {
+    return await win.__TAURI_INVOKE__(cmd, args);
+  }
+
+  throw new Error('Tauri API não encontrada no ambiente atual.');
+}
 
 /**
  * Utilitário para converter string UTF-8 para array de bytes
@@ -63,8 +92,7 @@ export const tauriHardwareService = {
   async listSerialPorts(): Promise<string[]> {
     if (isTauriEnvironment()) {
       try {
-        const { invoke } = (window as any).__TAURI__.core || (window as any).__TAURI__.tauri;
-        return await invoke('list_serial_ports');
+        return await invokeTauri<string[]>('list_serial_ports');
       } catch (err: any) {
         console.error('[TauriHardware] Erro ao listar portas:', err);
         throw new Error(err?.message || 'Erro ao listar portas seriais no Tauri');
@@ -91,13 +119,9 @@ export const tauriHardwareService = {
    * Aciona a abertura física da gaveta de dinheiro via pulso serial (Pino 2)
    */
   async openCashDrawer(portName: string = 'COM1', baudRate: number = 9600): Promise<void> {
-    if (isTauriEnvironment()) {
+    if ('__TAURI_INTERNALS__' in (window as unknown as Record<string, unknown>) || isTauriEnvironment()) {
       try {
-        const { invoke } = (window as any).__TAURI__.core || (window as any).__TAURI__.tauri;
-        await invoke('open_cash_drawer', {
-          portName,
-          baudRate,
-        });
+        await invokeTauri('open_cash_drawer', { portName, baudRate });
         return;
       } catch (err: any) {
         console.error('[TauriHardware] Erro ao abrir gaveta:', err);
@@ -120,10 +144,9 @@ export const tauriHardwareService = {
   ): Promise<void> {
     const rawArray = Array.isArray(payload) ? payload : Array.from(payload);
 
-    if (isTauriEnvironment()) {
+    if ('__TAURI_INTERNALS__' in (window as unknown as Record<string, unknown>) || isTauriEnvironment()) {
       try {
-        const { invoke } = (window as any).__TAURI__.core || (window as any).__TAURI__.tauri;
-        await invoke('print_escpos_raw', {
+        await invokeTauri('print_escpos_raw', {
           portName,
           baudRate,
           payload: rawArray,

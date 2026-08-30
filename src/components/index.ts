@@ -43,6 +43,7 @@ export { DashboardView } from './views/DashboardView';
 
 // Supabase Instance & Services
 export { supabase } from '../lib/supabase';
+export { supabaseAdmin } from '../lib/supabase/admin';
 export { supabaseService } from '../services/supabaseService';
 export { productService } from '../services/productService';
 export { tauriHardwareService, isTauriEnvironment } from '../services/tauriHardwareService';
@@ -51,6 +52,8 @@ export { HardwareService, ESCPOSBuilder } from '../services/hardwareService';
 export type { ReceiptItem, ReceiptData } from '../services/hardwareService';
 export { GET as getProductsRoute, POST as createProductRoute, expressHandlers as productExpressHandlers } from '../api/products';
 export { GET as getSaftRoute, expressSaftHandler } from '../api/saft';
+export { POST as onboardingRoute, provisionTenant, expressOnboardingHandler } from '../api/onboarding';
+export type { TenantProvisioningPayload, TenantProvisioningResult } from '../api/onboarding';
 
 // Custom & Lucide Icon Barrel
 export * from './icons';
@@ -84,4 +87,29 @@ export { OfflineStorage } from '../services/offlineStorage';
 export type { OfflineSale } from '../services/offlineStorage';
 export { SyncManager } from '../services/syncManager';
 export type { SyncCallback } from '../services/syncManager';
+export { submitSaleTransaction } from '../services/saleTransactionService';
+export type { SaleTransactionResult } from '../services/saleTransactionService';
+
+// Commercial & SaaS Pages
+export { SaaSCommercialPage } from '../screens/SaaSCommercialPage';
+
+// Product Components
+export { ProductCard } from './ProductCard';
+export type { ProductCardProps, ProductCardItem } from './ProductCard';
+export { ProductFormModal } from './ProductFormModal';
+export type { ProductFormModalProps, ProductFormData } from './ProductFormModal';
+export { ProductGrid } from './ProductGrid';
+export type { ProductGridProps, ProductGridItem } from './ProductGrid';
+export { PDVMainView, MOCK_PRODUCTS } from '../screens/PDVMainView';
+export { useCartStore, cartStore } from '../store/use-cart-store';
+export type { CartItem } from '../store/use-cart-store';
+export { uploadProductImage, uploadProductImageRoute } from '../api/upload/product-image';
+export type { ProductImageUploadResult } from '../api/upload/product-image';
+export { ImageUploadDropzone } from './admin/ImageUploadDropzone';
+export type { ImageUploadDropzoneProps } from './admin/ImageUploadDropzone';
+export { ProductRegistrationForm } from './admin/ProductRegistrationForm';
+export type { ProductRegistrationFormProps } from './admin/ProductRegistrationForm';
+export { StockEntryModal } from './admin/StockEntryModal';
+export type { StockEntryModalProps, StockEntryData } from './admin/StockEntryModal';
+export { ProductsManagementPage } from '../screens/ProductsManagementPage';
 

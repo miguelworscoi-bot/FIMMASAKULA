@@ -103,7 +103,7 @@ export function ThermalReceipt({ data, width = '80mm' }: ThermalReceiptProps) {
                 <td className="py-1">
                   <div>{itemName}</div>
                   <div className="text-[9px] text-gray-700">
-                    {item.quantity}x {unitPriceText} {item.vatRate !== undefined ? `(IVA ${item.vatRate}%)` : ''}
+                    {item.quantity}x {unitPriceText}
                   </div>
                 </td>
                 <td className="py-1 text-right font-bold align-top">
@@ -129,12 +129,6 @@ export function ThermalReceipt({ data, width = '80mm' }: ThermalReceiptProps) {
           <div className="flex justify-between text-[10px] text-gray-700">
             <span>DESCONTO:</span>
             <span>-{typeof data.discount === 'string' ? data.discount : formatMoney(data.discount)}</span>
-          </div>
-        )}
-        {data.tax && (
-          <div className="flex justify-between text-[10px]">
-            <span>IVA:</span>
-            <span>{typeof data.tax === 'string' ? data.tax : formatMoney(data.tax)}</span>
           </div>
         )}
         <div className="flex justify-between font-bold text-xs">

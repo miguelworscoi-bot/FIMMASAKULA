@@ -1,4 +1,5 @@
 use serialport::SerialPort;
+use std::io::Write; // Import obrigatório para manipulação de streams de bytes
 use std::time::Duration;
 
 // Tabela de Comandos Físicos ESC/POS (Hexadecimal)

@@ -200,15 +200,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ sales: localSales = []
     },
     vatBreakdown: [
       {
-        rate: 14,
-        baseAmount: Math.round((summary.totalRevenue / 1.14) * 100) / 100,
-        vatAmount: Math.round((summary.totalRevenue - (summary.totalRevenue / 1.14)) * 100) / 100,
-      },
-      {
         rate: 0,
-        baseAmount: 0,
+        baseAmount: summary.totalRevenue,
         vatAmount: 0,
-        exemptionReason: 'Isenção nos termos da alínea a) do nº 1 do art. 12.º do CIVA'
+        exemptionReason: 'Operação sem incidência / Isento de IVA'
       }
     ]
   };
