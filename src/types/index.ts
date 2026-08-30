@@ -1,4 +1,5 @@
 export type AppFlowState = 
+  | 'INTRO'
   | 'LOGIN'
   | 'APP_SHELL';
 
