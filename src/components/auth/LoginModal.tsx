@@ -145,7 +145,34 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       <div className="absolute top-1/4 -left-20 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Main Corporate Login Card */}
+      <div className="relative z-10 w-full max-w-6xl grid lg:grid-cols-[1.05fr_0.95fr] items-center gap-8 lg:gap-16">
+        {/* Editorial brand panel inspired by the supplied reference */}
+        <section className="hidden lg:flex min-h-[680px] flex-col justify-between px-6 py-8" aria-label="Marca Masakula">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-zinc-950 flex items-center justify-center text-white font-black tracking-tighter">MK</div>
+            <span className="text-xl font-extrabold tracking-tight text-zinc-950">Masakula</span>
+          </div>
+
+          <div className="flex flex-col items-center gap-10">
+            <div className="relative w-full max-w-[520px] h-[360px]">
+              <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Vendas%20%285%29-undoDIG4XjeCJE2kWSKxKklVxNhFM2.png" alt="Composição visual Masakula com produtos e estilo editorial" className="absolute left-0 top-0 h-32 w-44 rounded-[2rem] object-cover object-left-top shadow-sm" />
+              <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Vendas%20%285%29-undoDIG4XjeCJE2kWSKxKklVxNhFM2.png" alt="Detalhe visual da identidade Masakula" className="absolute left-28 top-16 h-64 w-56 rounded-[2rem] object-cover object-center shadow-lg" />
+              <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Vendas%20%285%29-undoDIG4XjeCJE2kWSKxKklVxNhFM2.png" alt="Detalhe editorial em tons naturais" className="absolute right-4 top-24 h-36 w-28 rounded-[1.5rem] object-cover object-right shadow-sm" />
+              <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Vendas%20%285%29-undoDIG4XjeCJE2kWSKxKklVxNhFM2.png" alt="Detalhe colorido da composição Masakula" className="absolute right-0 bottom-0 h-32 w-36 rounded-[1.75rem] object-cover object-bottom shadow-sm" />
+            </div>
+            <div className="max-w-md text-center">
+              <p className="text-5xl font-black leading-[1.05] tracking-tight text-zinc-950">Um nome,<br />várias soluções</p>
+              <p className="mt-5 text-sm leading-6 text-zinc-500">Gestão simples, operação inteligente e tudo o que o seu negócio precisa num só lugar.</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs font-semibold text-zinc-500">
+            <span className="h-2 w-2 rounded-full bg-[#E1FB15] ring-4 ring-[#E1FB15]/20" />
+            Gestão que acompanha o seu ritmo
+          </div>
+        </section>
+
+        {/* Main Corporate Login Card */}
       <div 
         id="login-corporate-card" 
         className="relative z-10 w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/90 shadow-2xl shadow-zinc-950/5 space-y-6"
@@ -509,6 +536,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               🏷️ Operador Caixa
             </button>
           </div>
+        </div>
         </div>
       </div>
 
