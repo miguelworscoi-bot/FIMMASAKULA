@@ -5,7 +5,6 @@ import {
   KeyRound, 
   Eye, 
   EyeOff, 
-  ShieldCheck, 
   Building2, 
   CheckCircle2, 
   AlertCircle, 
@@ -19,7 +18,6 @@ import {
   LayoutGrid,
   ChevronRight,
   Shield,
-  HelpCircle,
   Sparkles
 } from 'lucide-react';
 import { UserSession } from '../../types';
@@ -209,9 +207,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             <div>
               <div className="flex items-baseline gap-1.5">
                 <h1 className="font-extrabold text-base tracking-tight text-zinc-950">MASAKULA</h1>
-                <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider bg-red-50 px-1.5 py-0.5 rounded-md border border-red-100">
-                  ERP
-                </span>
               </div>
               <p className="text-xs text-zinc-500 font-medium italic">
                 Um nome, várias soluções
@@ -219,14 +214,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             </div>
           </div>
 
-          {/* AGT Certification Tag */}
-          <div 
-            id="security-lock-badge"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/80 text-[10px] font-semibold"
-          >
-            <ShieldCheck size={12} className="text-emerald-600" />
-            <span>AGT Homologado</span>
-          </div>
         </div>
 
         {/* Quick Role Selector Cards */}
@@ -375,8 +362,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 onClick={() => setIsMatrixOpen(true)}
                 className="text-xs text-blue-600 hover:text-blue-800 font-semibold underline cursor-pointer flex items-center gap-1"
               >
-                <HelpCircle size={13} />
-                <span>Consultar Matriz de Permissões</span>
               </button>
             </div>
 

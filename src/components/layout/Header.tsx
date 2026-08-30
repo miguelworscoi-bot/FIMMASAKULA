@@ -12,7 +12,6 @@ import {
   Building2,
   CheckCircle2,
   AlertTriangle,
-  BrainCircuit
 } from 'lucide-react';
 import { ActiveTab, NavigationTab } from '../../types';
 import { formatKz } from '../../utils/formatters';
@@ -153,22 +152,6 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Quick Actions Button Group */}
           <div className="flex items-center gap-1.5">
-            {/* Ícone Disparador do Motor de IA */}
-            <button
-              type="button"
-              onClick={() => setActiveTab(activeTab === 'ai_engine' ? 'sales' : 'ai_engine')}
-              title="Abrir Motor de IA e Previsão"
-              className={`group p-2.5 rounded-2xl transition-all border cursor-pointer ${
-                activeTab === 'ai_engine'
-                  ? 'bg-[#E1FB15] text-[#131313] border-[#E1FB15] shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]'
-                  : 'bg-[#131313] text-[#E1FB15] border-white/10 hover:border-[#E1FB15]/50 shadow-[4px_4px_10px_rgba(0,0,0,0.5)]'
-              }`}
-            >
-              <div className="transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-12">
-                <BrainCircuit size={18} />
-              </div>
-            </button>
-
             {activeTab !== 'pos' && activeTab !== 'sales' && (
               <button
                 id="btn-quick-pos"

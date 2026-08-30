@@ -3,11 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AppFlowState, UserSession } from './types';
 import { LoginModal } from './components/auth/LoginModal';
 import { AppShell } from './components/layout/AppShell';
-import { SplashOne } from './components/intro/SplashOne';
+import { IntroVideo } from './components/intro/IntroVideo';
 
 export function MasakulaSystem() {
   // Navigation State Machine
-  const [flowState, setFlowState] = useState<AppFlowState>('SPLASH');
+  const [flowState, setFlowState] = useState<AppFlowState>('INTRO');
 
   useEffect(() => {
     //
@@ -50,30 +50,19 @@ export function MasakulaSystem() {
     setFlowState('LOGIN');
   };
 
-  const handleSplashNext = () => {
-    setFlowState('LOGIN');
-  };
-
-  const handleSkipToLogin = () => {
-    setFlowState('LOGIN');
-  };
-
   return (
     <div id="masakula-root-entry" className="min-h-screen bg-zinc-950 font-sans antialiased selection:bg-zinc-900 selection:text-white">
       <AnimatePresence mode="wait">
-        {flowState === 'SPLASH' && (
+        {flowState === 'INTRO' && (
           <motion.div
-            key="splash"
-            initial={{ opacity: 0 }}
+            key="intro"
+            initial={{ opacity: 1 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             className="min-h-screen w-full"
           >
-            <SplashOne
-              onNext={handleSplashNext}
-              onSkipToLogin={handleSkipToLogin}
-            />
+            <IntroVideo onFinish={() => setFlowState('LOGIN')} />
           </motion.div>
         )}
 
