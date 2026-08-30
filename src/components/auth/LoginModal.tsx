@@ -155,7 +155,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
           <div className="flex flex-col items-center gap-10">
             <div className="relative w-full max-w-[520px] h-[360px]">
-              <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Vendas%20%285%29-undoDIG4XjeCJE2kWSKxKklVxNhFM2.png" alt="Composição visual Masakula com produtos e estilo editorial" className="absolute left-0 top-0 h-32 w-44 rounded-[2rem] object-cover object-left-top shadow-sm" />
+              <img src="/attendant-masakula.png" alt="Atendente Masakula com t-shirt da marca" className="absolute left-28 top-0 h-40 w-40 rounded-[2rem] object-cover object-center shadow-md" />
               <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Vendas%20%285%29-undoDIG4XjeCJE2kWSKxKklVxNhFM2.png" alt="Detalhe visual da identidade Masakula" className="absolute left-28 top-16 h-64 w-56 rounded-[2rem] object-cover object-center shadow-lg" />
               <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Vendas%20%285%29-undoDIG4XjeCJE2kWSKxKklVxNhFM2.png" alt="Detalhe editorial em tons naturais" className="absolute right-4 top-24 h-36 w-28 rounded-[1.5rem] object-cover object-right shadow-sm" />
               <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Vendas%20%285%29-undoDIG4XjeCJE2kWSKxKklVxNhFM2.png" alt="Detalhe colorido da composição Masakula" className="absolute right-0 bottom-0 h-32 w-36 rounded-[1.75rem] object-cover object-bottom shadow-sm" />
