@@ -79,6 +79,11 @@ export const Header: React.FC<HeaderProps> = ({
           title: 'Clientes',
           subtitle: 'Cadastro de clientes, histórico e conformidade com NIF',
         };
+      case 'goals':
+        return {
+          title: 'Metas',
+          subtitle: 'Acompanhamento em tempo real do faturamento e rentabilidade da equipa',
+        };
       case 'reports':
         return {
           title: 'Relatórios',

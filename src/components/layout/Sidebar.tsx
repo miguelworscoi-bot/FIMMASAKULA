@@ -12,7 +12,8 @@ import {
   LogOut, 
   Sparkles, 
   ShieldCheck, 
-  BrainCircuit
+  BrainCircuit,
+  Target
 } from 'lucide-react';
 import { ActiveTab, NavigationTab, UserSession } from '../../types';
 
@@ -68,6 +69,12 @@ export const MAIN_NAV_ITEMS: SidebarNavOption[] = [
     label: 'Clientes',
     tooltip: 'Clientes & Gestão de NIF',
     icon: Users,
+  },
+  {
+    id: 'goals',
+    label: 'Metas',
+    tooltip: 'Metas de Faturamento & Lucro',
+    icon: Target,
   },
   {
     id: 'reports',

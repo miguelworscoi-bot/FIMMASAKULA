@@ -15,7 +15,8 @@ import {
   ArrowRight,
   ShieldCheck,
   CheckCircle2,
-  BrainCircuit
+  BrainCircuit,
+  Target
 } from 'lucide-react';
 import { ActiveTab, NavigationTab, Product, WorkOrder, Customer, SaleTransaction, CompanySettings, UserSession, Expense, CashSession, CashMovement } from '../../types';
 import { Sidebar } from './Sidebar';
@@ -27,6 +28,7 @@ import { PosView } from '../views/PosView';
 import { CashSessionView } from '../views/CashSessionView';
 import { ExpensesView } from '../views/ExpensesView';
 import { CustomersView } from '../views/CustomersView';
+import { GoalsView } from '../views/GoalsView';
 import { ReportsView } from '../views/ReportsView';
 import { SettingsView } from '../views/SettingsView';
 import { BusinessIntelligenceScreen } from '../BusinessIntelligenceScreen';
@@ -110,6 +112,13 @@ export const TAB_METADATA: Record<ActiveTab, {
     subtitle: 'Cadastro de clientes particulares e empresas com NIF',
     statusMessage: 'Módulo pronto. Histórico de compras, crédito em conta corrente e conformidade fiscal AGT.',
     icon: Users,
+    phase: 'Fase 1 • Operacional',
+  },
+  goals: {
+    title: 'Metas',
+    subtitle: 'Acompanhamento em tempo real do faturamento e rentabilidade da equipa',
+    statusMessage: 'Módulo pronto. Defina metas de faturamento e lucro e acompanhe o progresso em tempo real.',
+    icon: Target,
     phase: 'Fase 1 • Operacional',
   },
   reports: {
@@ -381,6 +390,10 @@ export const AppShell: React.FC<AppShellProps> = ({
             customers={customers}
             setCustomers={setCustomers}
           />
+        );
+      case 'goals':
+        return (
+          <GoalsView />
         );
       case 'reports':
         return (
