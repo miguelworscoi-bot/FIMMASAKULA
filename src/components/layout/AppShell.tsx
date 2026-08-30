@@ -444,33 +444,6 @@ export const AppShell: React.FC<AppShellProps> = ({
 
         {/* 5. Área Principal que exibe o título da tela selecionada e mensagem simples de aguardo para o próximo módulo */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
-          {/* Phase 1 Module Banner Card */}
-          <div 
-            id={`module-banner-${activeTab}`}
-            className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-black text-white flex items-center justify-center shrink-0 shadow-sm">
-                <IconComponent size={22} className="text-white" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-black text-gray-900 capitalize tracking-tight">
-                    {currentTabMeta.title}
-                  </h1>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 text-zinc-700">
-                    Kz (AOA)
-                  </span>
-                </div>
-                <p className="text-xs text-gray-400 mt-1">
-                  Módulo <span className="font-bold text-gray-700">{activeTab}</span> ativo. Pronto para receber os componentes da próxima fase.
-                </p>
-              </div>
-            </div>
-
-
-          </div>
-
           {/* Dynamic Content of the Active Screen */}
           <AnimatePresence mode="wait">
             <motion.div
