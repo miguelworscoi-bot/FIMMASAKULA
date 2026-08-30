@@ -18,6 +18,7 @@ import {
 import { motion } from 'motion/react';
 import { NavigationTab, Product, WorkOrder, Customer, SaleTransaction } from '../../types';
 import { formatKz, formatDate, getWorkOrderStatusConfig } from '../../utils/formatters';
+import { TopProductsCarousel } from './TopProductsCarousel';
 
 interface DashboardViewProps {
   setActiveTab: (tab: NavigationTab) => void;
@@ -86,6 +87,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Top Selling Products Showcase */}
+      <TopProductsCarousel onAddToCart={() => setActiveTab('pos')} />
 
       {/* Main KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
