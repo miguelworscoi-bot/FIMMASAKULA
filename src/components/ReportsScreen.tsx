@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { 
   TrendingUp, DollarSign, PieChart as PieIcon, BarChart3, 
   Calendar, ArrowUpRight, ArrowDownRight, Clock, CreditCard, Wallet 
@@ -25,6 +26,7 @@ export default function ReportsScreen() {
   const [loading, setLoading] = useState(false);
   const [activeBarHover, setActiveBarHover] = useState<number | null>(null);
   const [activeLineHover, setActiveLineHover] = useState<number | null>(null);
+  const [activePieHover, setActivePieHover] = useState<number | null>(null);
 
   // -------------------------------------------------------------
   // DADOS 1: EVOLUÇÃO DE VENDAS E LUCRO POR HORA (Colunas & Linhas)
@@ -117,22 +119,37 @@ export default function ReportsScreen() {
     return (
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">
         {paymentData.map((item, index) => {
-          const strokeDasharray = `${(item.percentage * circumference) / 100} ${circumference}`;
+          const dashLength = (item.percentage * circumference) / 100;
+          const strokeDasharray = `${dashLength} ${circumference}`;
           const strokeDashoffset = -((cumulativePercent * circumference) / 100);
           cumulativePercent += item.percentage;
 
+          const isActive = activePieHover === index;
+          const isDimmed = activePieHover !== null && !isActive;
+
           return (
-            <circle
+            <motion.circle
               key={index}
               cx={center}
               cy={center}
               r={radius}
               fill="transparent"
               stroke={item.color}
-              strokeWidth="24"
               strokeDasharray={strokeDasharray}
               strokeDashoffset={strokeDashoffset}
-              className="transition-all duration-500 hover:opacity-80 cursor-pointer"
+              className="cursor-pointer"
+              onMouseEnter={() => setActivePieHover(index)}
+              onMouseLeave={() => setActivePieHover(null)}
+              initial={{ strokeWidth: 0, opacity: 0 }}
+              animate={{ 
+                strokeWidth: isActive ? 30 : 24, 
+                opacity: isDimmed ? 0.35 : 1 
+              }}
+              transition={{ 
+                strokeWidth: { type: 'spring', stiffness: 300, damping: 20 },
+                opacity: { duration: 0.35, delay: index * 0.15 }
+              }}
+              style={{ transformOrigin: `${center}px ${center}px` }}
             />
           );
         })}
@@ -258,21 +275,37 @@ export default function ReportsScreen() {
                 >
                   {/* Tooltip de Valor em Hover */}
                   {isHovered && (
-                    <div className="absolute -top-10 bg-[#131313] text-[#E1FB15] text-[10px] font-black py-1 px-2 rounded-lg shadow-lg whitespace-nowrap z-10">
+                    <motion.div
+                      initial={{ opacity: 0, y: 6, scale: 0.9 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+                      className="absolute -top-10 bg-[#131313] text-[#E1FB15] text-[10px] font-black py-1 px-2 rounded-lg shadow-lg whitespace-nowrap z-10"
+                    >
                       {item.revenue.toLocaleString()} Kz
-                    </div>
+                    </motion.div>
                   )}
 
                   {/* Barra / Coluna */}
-                  <div 
-                    style={{ height: `${heightPercent}%` }} 
-                    className={`w-full max-w-[36px] rounded-t-xl transition-all duration-300 ${
-                      isHovered ? 'bg-[#E1FB15] border-2 border-black' : 'bg-[#131313]'
+                  <motion.div 
+                    initial={{ height: 0 }}
+                    animate={{ height: `${heightPercent}%` }}
+                    transition={{ 
+                      type: 'spring', 
+                      stiffness: 120, 
+                      damping: 16, 
+                      delay: idx * 0.08 
+                    }}
+                    whileHover={{ scaleY: 1.04, scaleX: 1.08 }}
+                    style={{ transformOrigin: 'bottom' }}
+                    className={`w-full max-w-[36px] rounded-t-xl ${
+                      isHovered 
+                        ? 'bg-[#E1FB15] border-2 border-black shadow-[0_0_0_4px_rgba(225,251,21,0.15)]' 
+                        : 'bg-[#131313]'
                     }`}
                   />
 
                   {/* Rótulo de Hora */}
-                  <span className="text-[10px] font-bold text-gray-400 mt-2">{item.hour}</span>
+                  <span className={`text-[10px] font-bold mt-2 transition-colors ${isHovered ? 'text-black' : 'text-gray-400'}`}>{item.hour}</span>
                 </div>
               );
             })}
@@ -309,10 +342,26 @@ export default function ReportsScreen() {
               })}
 
               {/* Área Sombreada */}
-              <path d={areaD} fill="url(#profitAreaGrad)" />
+              <motion.path 
+                d={areaD} 
+                fill="url(#profitAreaGrad)" 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.9, ease: 'easeOut' }}
+              />
 
               {/* Linha Contínua */}
-              <path d={pathD} fill="none" stroke="#32D583" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              <motion.path 
+                d={pathD} 
+                fill="none" 
+                stroke="#32D583" 
+                strokeWidth="2.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 1.2, ease: 'easeInOut' }}
+              />
 
               {/* Pontos de Interação por Hora */}
               {linePoints.map((pt, idx) => (
@@ -322,7 +371,33 @@ export default function ReportsScreen() {
                   onMouseEnter={() => setActiveLineHover(idx)}
                   onMouseLeave={() => setActiveLineHover(null)}
                 >
-                  <circle cx={pt.x} cy={pt.y} r="4" fill="#32D583" stroke="#FFFFFF" strokeWidth="2" />
+                  {/* Área de captura de hover invisível para melhor interação */}
+                  <rect x={pt.x - 20} y={0} width="40" height={lineSvgHeight} fill="transparent" />
+
+                  {/* Halo pulsante no ponto ativo */}
+                  {activeLineHover === idx && (
+                    <motion.circle
+                      cx={pt.x} cy={pt.y}
+                      fill="#32D583" fillOpacity={0.25}
+                      initial={{ r: 4 }}
+                      animate={{ r: 12 }}
+                      transition={{ duration: 0.9, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
+                    />
+                  )}
+
+                  <motion.circle 
+                    cx={pt.x} cy={pt.y} r="4" 
+                    fill="#32D583" stroke="#FFFFFF" strokeWidth="2"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: activeLineHover === idx ? 1.5 : 1, opacity: 1 }}
+                    transition={{ 
+                      scale: activeLineHover === idx 
+                        ? { type: 'spring', stiffness: 400, damping: 15 } 
+                        : { delay: 0.6 + idx * 0.08, type: 'spring', stiffness: 300, damping: 18 },
+                      opacity: { delay: 0.6 + idx * 0.08 }
+                    }}
+                    style={{ transformOrigin: `${pt.x}px ${pt.y}px` }}
+                  />
 
                   {/* Rótulo Eixo X */}
                   <text x={pt.x} y={lineSvgHeight - 8} textAnchor="middle" className="text-[10px] fill-gray-400 font-bold">
@@ -370,9 +445,32 @@ export default function ReportsScreen() {
           {/* Legenda e Detalhamento em Lista */}
           <div className="w-full md:w-1/2 space-y-3">
             {paymentData.map((item, i) => (
-              <div key={i} className="flex items-center justify-between text-xs p-2.5 bg-gray-50 rounded-2xl">
+              <motion.div 
+                key={i} 
+                onMouseEnter={() => setActivePieHover(i)}
+                onMouseLeave={() => setActivePieHover(null)}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ 
+                  opacity: activePieHover !== null && activePieHover !== i ? 0.5 : 1, 
+                  x: 0,
+                  scale: activePieHover === i ? 1.02 : 1,
+                }}
+                transition={{ 
+                  opacity: { duration: 0.3, delay: i * 0.1 }, 
+                  x: { duration: 0.3, delay: i * 0.1 },
+                  scale: { type: 'spring', stiffness: 400, damping: 22 },
+                }}
+                className={`flex items-center justify-between text-xs p-2.5 rounded-2xl cursor-pointer transition-colors ${
+                  activePieHover === i ? 'bg-gray-100 ring-1 ring-gray-200' : 'bg-gray-50'
+                }`}
+              >
                 <div className="flex items-center gap-2.5">
-                  <span className="w-3.5 h-3.5 rounded-md" style={{ backgroundColor: item.color }} />
+                  <motion.span 
+                    className="w-3.5 h-3.5 rounded-md" 
+                    style={{ backgroundColor: item.color }}
+                    animate={{ scale: activePieHover === i ? 1.3 : 1 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+                  />
                   <span className="font-bold text-gray-800">{item.method}</span>
                 </div>
                 <div className="text-right">
@@ -381,7 +479,7 @@ export default function ReportsScreen() {
                     {item.percentage}%
                   </span>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
 
