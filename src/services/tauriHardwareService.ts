@@ -18,6 +18,11 @@ export const ESC_POS = {
   FEED_3_LINES: [0x0a, 0x0a, 0x0a],
 };
 
+export interface SerialPortInfo {
+  port_name: string;
+  port_type?: string;
+}
+
 export interface SerialResponse {
   success: boolean;
   message: string;
@@ -40,16 +45,13 @@ export const isTauriEnvironment = (): boolean => {
  */
 export function textToBytes(text: string): number[] {
   if (typeof TextEncoder !== 'undefined') {
-    return Array.from(new TextEncoder().encode(text));
+    const encoder = new TextEncoder();
+    return Array.from(encoder.encode(text));
   }
   const bytes: number[] = [];
   for (let i = 0; i < text.length; i++) {
     const charCode = text.charCodeAt(i);
-    if (charCode < 0x80) {
-      bytes.push(charCode);
-    } else {
-      bytes.push(...Array.from(new TextEncoder().encode(text.charAt(i))));
-    }
+    bytes.push(charCode & 0xff);
   }
   return bytes;
 }

@@ -1,6 +1,6 @@
 import React from "react";
-import { AnimatedIcon } from "@/components/ui/AnimatedIcon";
-import { BoxIcon, CartIcon, CogIcon, ChartColumnIncreasingIcon } from "@/components/icons";
+import { AnimatedIcon } from "./AnimatedIcon";
+import { BoxIcon, CartIcon, CogIcon, ChartColumnIncreasingIcon } from "../icons";
 
 const NAV_ITEMS = [
   { label: "PDV / Vendas", icon: CartIcon, animation: "bounce" as const },

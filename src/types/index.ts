@@ -202,3 +202,15 @@ export type {
   CreateProductDTO, 
   ProductFilterParams 
 } from './inventory';
+
+// SAF-T (AO) Fiscal Audit Domain Types
+export type {
+  SaftCompanyHeader,
+  SaftCustomer,
+  SaftProduct,
+  SaftInvoiceLine,
+  SaftInvoice
+} from './saft';
+
+// Offline Sales & Sync Queue Types
+export type { OfflineSale } from '../services/offlineStorage';

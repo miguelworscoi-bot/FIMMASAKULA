@@ -47,7 +47,10 @@ export { supabaseService } from '../services/supabaseService';
 export { productService } from '../services/productService';
 export { tauriHardwareService, isTauriEnvironment } from '../services/tauriHardwareService';
 export type { SerialPortInfo, SerialResponse, PrintReceiptOptions } from '../services/tauriHardwareService';
+export { HardwareService, ESCPOSBuilder } from '../services/hardwareService';
+export type { ReceiptItem, ReceiptData } from '../services/hardwareService';
 export { GET as getProductsRoute, POST as createProductRoute, expressHandlers as productExpressHandlers } from '../api/products';
+export { GET as getSaftRoute, expressSaftHandler } from '../api/saft';
 
 // Custom & Lucide Icon Barrel
 export * from './icons';
@@ -65,4 +68,20 @@ export type {
   CreateProductDTO,
   ProductFilterParams
 } from '../types/inventory';
+
+// SAF-T (AO) Domain Types & XML Generator
+export { SaftAOXmlBuilder } from '../services/saftXmlBuilder';
+export type {
+  SaftCompanyHeader,
+  SaftCustomer,
+  SaftProduct,
+  SaftInvoiceLine,
+  SaftInvoice
+} from '../types/saft';
+
+// Offline Sales & Sync Engine
+export { OfflineStorage } from '../services/offlineStorage';
+export type { OfflineSale } from '../services/offlineStorage';
+export { SyncManager } from '../services/syncManager';
+export type { SyncCallback } from '../services/syncManager';
 
