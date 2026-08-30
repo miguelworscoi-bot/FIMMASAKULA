@@ -145,7 +145,40 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       <div className="absolute top-1/4 -left-20 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Main Corporate Login Card */}
+      <div className="relative z-10 w-full max-w-6xl grid lg:grid-cols-[1.05fr_0.95fr] items-center gap-8 lg:gap-16">
+        {/* Editorial brand panel inspired by the supplied reference */}
+        <section className="hidden lg:flex min-h-[680px] flex-col justify-between px-6 py-8" aria-label="Marca Masakula">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-zinc-950 flex items-center justify-center text-white font-black tracking-tighter">MK</div>
+            <span className="text-xl font-extrabold tracking-tight text-zinc-950">Masakula</span>
+          </div>
+
+          <div className="flex flex-col items-center gap-10">
+            <div className="relative w-full max-w-[520px] h-[380px]">
+              {/* Flores - topo esquerdo */}
+              <img src="/collage/flores.png" alt="Composição floral editorial Masakula" className="absolute left-8 top-0 h-32 w-44 rounded-[2rem] object-cover object-center shadow-sm" />
+              {/* Unhas - topo direito pequeno */}
+              <img src="/collage/nails.png" alt="Detalhe editorial de beleza" className="absolute right-4 top-16 h-32 w-28 rounded-[1.75rem] object-cover object-center shadow-sm" />
+              {/* Hero central - retrato */}
+              <img src="/collage/hero.png" alt="Retrato editorial vibrante Masakula" className="absolute left-1/2 top-12 -translate-x-1/2 h-56 w-48 rounded-[2rem] object-cover object-center shadow-lg ring-1 ring-black/5" />
+              {/* Moletom verde - baixo esquerdo */}
+              <img src="/collage/hoodie.png" alt="Moda streetwear em verde lima" className="absolute left-4 bottom-0 h-48 w-40 rounded-[2rem] object-cover object-center shadow-md" />
+              {/* Sofá laranja - baixo direito */}
+              <img src="/collage/sofa.png" alt="Interior editorial com sofá laranja" className="absolute right-0 bottom-4 h-32 w-44 rounded-[1.75rem] object-cover object-center shadow-sm" />
+            </div>
+            <div className="max-w-md text-center">
+              <p className="text-6xl font-black leading-[1.05] tracking-tight text-zinc-950">Masakula</p>
+              <p className="mt-6 text-3xl font-black leading-[1.1] tracking-tight text-zinc-900">“Um nome,<br />várias soluções”</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs font-semibold text-zinc-500">
+            <span className="h-2 w-2 rounded-full bg-[#E1FB15] ring-4 ring-[#E1FB15]/20" />
+            Gestão que acompanha o seu ritmo
+          </div>
+        </section>
+
+        {/* Main Corporate Login Card */}
       <div 
         id="login-corporate-card" 
         className="relative z-10 w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/90 shadow-2xl shadow-zinc-950/5 space-y-6"
@@ -509,6 +542,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               🏷️ Operador Caixa
             </button>
           </div>
+        </div>
         </div>
       </div>
 

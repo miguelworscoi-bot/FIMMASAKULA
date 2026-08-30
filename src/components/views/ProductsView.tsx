@@ -267,15 +267,6 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
         {/* Botão de Ação Primária: Nova Entrada de Estoque */}
         <div className="flex items-center gap-2.5">
           <button
-            type="button"
-            onClick={() => setIsMatrixOpen(true)}
-            className="px-3.5 py-2.5 rounded-2xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <ShieldCheck size={15} className="text-emerald-600" />
-            <span className="hidden sm:inline">Matriz de Permissões</span>
-          </button>
-
-          <button
             id="btn-new-stock-entry"
             type="button"
             onClick={() => handleOpenModal('stock_entry')}
