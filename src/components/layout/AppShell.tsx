@@ -468,13 +468,7 @@ export const AppShell: React.FC<AppShellProps> = ({
               </div>
             </div>
 
-            {/* Status indicator */}
-            <div className="flex items-center gap-2 bg-[#fcfcfc] px-3.5 py-2 rounded-2xl border border-gray-100 text-xs text-zinc-600 self-start sm:self-auto">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-              <span className="text-[11px] font-medium text-zinc-700">
-                {currentTabMeta.statusMessage}
-              </span>
-            </div>
+
           </div>
 
           {/* Dynamic Content of the Active Screen */}
