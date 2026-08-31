@@ -22,6 +22,7 @@ export type ActiveTab =
   | 'expenses'
   | 'customers'
   | 'goals'
+  | 'attendance'
   | 'reports'
   | 'settings'
   | 'ai_engine';

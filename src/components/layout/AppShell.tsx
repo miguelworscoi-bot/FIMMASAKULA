@@ -29,6 +29,7 @@ import { CashSessionView } from '../views/CashSessionView';
 import { ExpensesView } from '../views/ExpensesView';
 import { CustomersView } from '../views/CustomersView';
 import { GoalsView } from '../views/GoalsView';
+import { AttendanceStatsModule } from '../views/AttendanceStatsView';
 import { ReportsView } from '../views/ReportsView';
 import { SettingsView } from '../views/SettingsView';
 import { BusinessIntelligenceScreen } from '../BusinessIntelligenceScreen';
@@ -119,6 +120,13 @@ export const TAB_METADATA: Record<ActiveTab, {
     subtitle: 'Acompanhamento em tempo real do faturamento e rentabilidade da equipa',
     statusMessage: 'Módulo pronto. Defina metas de faturamento e lucro e acompanhe o progresso em tempo real.',
     icon: Target,
+    phase: 'Fase 1 • Operacional',
+  },
+  attendance: {
+    title: 'Tempo de Atendimento',
+    subtitle: 'Carga horária semanal e rendimento por operador de caixa',
+    statusMessage: 'Módulo pronto. Acompanhe horas trabalhadas, ranking e eficiência por hora de cada operador.',
+    icon: Clock,
     phase: 'Fase 1 • Operacional',
   },
   reports: {
@@ -394,6 +402,10 @@ export const AppShell: React.FC<AppShellProps> = ({
       case 'goals':
         return (
           <GoalsView />
+        );
+      case 'attendance':
+        return (
+          <AttendanceStatsModule />
         );
       case 'reports':
         return (
