@@ -13,7 +13,8 @@ import {
   Sparkles, 
   ShieldCheck, 
   BrainCircuit,
-  Target
+  Target,
+  Clock
 } from 'lucide-react';
 import { ActiveTab, NavigationTab, UserSession } from '../../types';
 
@@ -75,6 +76,12 @@ export const MAIN_NAV_ITEMS: SidebarNavOption[] = [
     label: 'Metas',
     tooltip: 'Metas de Faturamento & Lucro',
     icon: Target,
+  },
+  {
+    id: 'attendance',
+    label: 'Atendimento',
+    tooltip: 'Tempo de Atendimento & Rendimento por Operador',
+    icon: Clock,
   },
   {
     id: 'reports',
