@@ -74,14 +74,8 @@ export const MAIN_NAV_ITEMS: SidebarNavOption[] = [
   {
     id: 'goals',
     label: 'Metas',
-    tooltip: 'Metas de Faturamento & Lucro',
+    tooltip: 'Metas de Faturamento, Lucro & Tempo de Atendimento',
     icon: Target,
-  },
-  {
-    id: 'attendance',
-    label: 'Atendimento',
-    tooltip: 'Tempo de Atendimento & Rendimento por Operador',
-    icon: Clock,
   },
   {
     id: 'reports',

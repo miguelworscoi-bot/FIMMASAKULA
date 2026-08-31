@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Plus,
   Target,
@@ -15,11 +15,16 @@ import {
   CheckCircle2,
   Clock,
   Sparkles,
+  Layers,
+  Cloud,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { formatKz } from '../../utils/formatters';
+import { supabase } from '../../lib/supabase';
 import { CreateGoalModal, NewGoalDTO } from '../admin/CreateGoalModal';
+import { AttendanceStatsModule } from './AttendanceStatsView';
+import { BrushStroke } from '../ui/BrushStroke';
 
 export interface GoalItem {
   id: string;
@@ -130,7 +135,11 @@ const item = {
   show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' as const } },
 };
 
-export const GoalsView: React.FC = () => {
+interface GoalsViewProps {
+  initialTab?: string;
+}
+
+export const GoalsView: React.FC<GoalsViewProps> = () => {
   const [selectedDay, setSelectedDay] = useState(27);
   const [timeFilter, setTimeFilter] = useState('1D');
   const [selectedAttendant, setSelectedAttendant] = useState('TODOS');
@@ -142,6 +151,39 @@ export const GoalsView: React.FC = () => {
   const [goals, setGoals] = useState<GoalItem[]>(INITIAL_GOALS);
   const [selectedGoalId, setSelectedGoalId] = useState<string>('goal-1');
   const [goalsFilter, setGoalsFilter] = useState<'ALL' | 'IN_PROGRESS' | 'COMPLETED'>('ALL');
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
+
+  // Sincronização inicial com Supabase
+  useEffect(() => {
+    async function loadMetasFromSupabase() {
+      try {
+        setIsCloudSyncing(true);
+        const { data, error } = await supabase.from('metas').select('*').order('created_at', { ascending: false });
+        if (!error && data && data.length > 0) {
+          const mappedGoals: GoalItem[] = data.map((item: any) => ({
+            id: item.id ? String(item.id) : `goal-${Date.now()}`,
+            title: item.title || 'Meta na Nuvem',
+            type: (item.type || 'BOTH') as 'SALES' | 'PROFIT' | 'BOTH',
+            attendantId: item.attendant_id || 'TODOS',
+            attendantName: item.attendant_name || 'Todas as Atendentes',
+            targetAmount: Number(item.target_amount) || 0,
+            currentAmount: Number(item.current_amount) || 0,
+            dueDate: item.due_date || new Date().toISOString().split('T')[0],
+            createdAt: item.created_at ? item.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+            notes: item.notes || `Período: ${item.period || 'monthly'}`,
+          }));
+          setGoals(mappedGoals);
+          setSelectedGoalId(mappedGoals[0].id);
+        }
+      } catch (err) {
+        console.warn('Supabase fetch fallback to local INITIAL_GOALS:', err);
+      } finally {
+        setIsCloudSyncing(false);
+      }
+    }
+
+    loadMetasFromSupabase();
+  }, []);
 
   // Meta ativa atualmente no Painel / Hero
   const activeGoal = useMemo(() => {
@@ -171,7 +213,7 @@ export const GoalsView: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const handleGoalCreated = (newGoalData: NewGoalDTO) => {
+  const handleGoalCreated = async (newGoalData: NewGoalDTO) => {
     const attendantObj = ATTENDANTS.find((a) => a.id === newGoalData.attendantId);
     const attendantName = newGoalData.attendantId === 'TODOS' 
       ? 'Todas as Atendentes' 
@@ -195,10 +237,24 @@ export const GoalsView: React.FC = () => {
 
     setGoals((prev) => [newGoal, ...prev]);
     setSelectedGoalId(newGoal.id);
-    showToast(`Meta "${newGoal.title}" criada com sucesso e ativada no painel!`);
+    showToast(`Meta "${newGoal.title}" criada e sincronizada com sucesso!`);
+
+    // Inserção assíncrona na nuvem (Supabase)
+    try {
+      await supabase.from('metas').insert([
+        {
+          title: newGoalData.title,
+          target_amount: newGoalData.targetAmount,
+          current_amount: initialProgress,
+          period: 'monthly',
+        },
+      ]);
+    } catch (err) {
+      console.warn('Persistência em background no Supabase:', err);
+    }
   };
 
-  const handleDeleteGoal = (goalId: string, e: React.MouseEvent) => {
+  const handleDeleteGoal = async (goalId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (goals.length <= 1) {
       showToast('Deve existir pelo menos uma meta configurada.');
@@ -212,6 +268,15 @@ export const GoalsView: React.FC = () => {
       }
     }
     showToast('Meta removida.');
+
+    // Remoção na nuvem se for ID de tabela
+    try {
+      if (!goalId.startsWith('goal-')) {
+        await supabase.from('metas').delete().eq('id', goalId);
+      }
+    } catch (err) {
+      console.warn('Erro ao remover no Supabase:', err);
+    }
   };
 
   const filteredGoals = useMemo(() => {
@@ -363,14 +428,28 @@ export const GoalsView: React.FC = () => {
               <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold">
                 {activeGoal.attendantName}
               </span>
+              {percentage >= 100 && (
+                <span className="text-xs px-3 py-1 rounded-full bg-emerald-500 text-white font-black flex items-center gap-1.5 shadow-md shadow-emerald-500/30 animate-pulse">
+                  <Trophy size={13} className="text-[#E1FB15]" />
+                  <span>META BATIDA (100%)</span>
+                </span>
+              )}
               <span className="text-[11px] text-zinc-400 flex items-center gap-1 font-medium">
                 <Calendar size={12} /> Limite: {activeGoal.dueDate}
               </span>
             </div>
 
             <div>
-              <div className="text-3xl sm:text-4xl font-black tracking-tight">
-                {formatKz(currentBalance)}
+              <div className="relative inline-block my-1.5 py-1">
+                {/* Marca de Pincel atrás unida ao número */}
+                <div className="absolute inset-0 -inset-x-8 -inset-y-3 -z-10 flex items-center justify-center pointer-events-none select-none">
+                  <BrushStroke className="w-full h-full text-white/20 sm:text-white/25 drop-shadow-[0_4px_16px_rgba(0,0,0,0.6)] scale-110 sm:scale-125" />
+                </div>
+
+                {/* Número por cima em cor branca destacada */}
+                <div className="relative z-10 text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white drop-shadow-md">
+                  {formatKz(currentBalance)}
+                </div>
               </div>
               <p className="text-zinc-400 text-sm mt-1">
                 Objetivo definido: <span className="text-white font-semibold">{formatKz(targetGoal)}</span>
@@ -410,365 +489,429 @@ export const GoalsView: React.FC = () => {
         variants={item}
         className="grid grid-cols-1 sm:grid-cols-3 gap-4"
       >
-        {/* Total Faturado */}
-        <div className="p-5 rounded-3xl bg-white border border-gray-100/90 shadow-xs hover:border-gray-200 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Total Faturado</span>
-            <div className="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <Wallet size={18} />
+            {/* Total Faturado */}
+            <div className="p-5 rounded-3xl bg-white border border-gray-100/90 shadow-xs hover:border-gray-200 transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Total Faturado</span>
+                <div className="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <Wallet size={18} />
+                </div>
+              </div>
+              <div className="mt-3">
+                <div className="text-2xl font-black text-zinc-950 tracking-tight">{formatKz(totalFaturado)}</div>
+                <div className="flex items-center gap-1.5 mt-1 text-xs text-emerald-600 font-semibold">
+                  <ArrowUpRight size={14} />
+                  <span>Acumulado do período</span>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-black text-zinc-950 tracking-tight">{formatKz(totalFaturado)}</div>
-            <div className="flex items-center gap-1.5 mt-1 text-xs text-emerald-600 font-semibold">
-              <ArrowUpRight size={14} />
-              <span>Acumulado do período</span>
-            </div>
-          </div>
-        </div>
 
-        {/* Lucro */}
-        <div className="p-5 rounded-3xl bg-white border border-gray-100/90 shadow-xs hover:border-gray-200 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Lucro Líquido</span>
-            <div className="w-9 h-9 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <Coins size={18} />
+            {/* Lucro */}
+            <div className="p-5 rounded-3xl bg-white border border-gray-100/90 shadow-xs hover:border-gray-200 transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Lucro Líquido</span>
+                <div className="w-9 h-9 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                  <Coins size={18} />
+                </div>
+              </div>
+              <div className="mt-3">
+                <div className="text-2xl font-black text-zinc-950 tracking-tight">{formatKz(totalLucro)}</div>
+                <div className="flex items-center gap-1.5 mt-1 text-xs text-zinc-500 font-medium">
+                  <span>Margem estimada de {margem}%</span>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-black text-zinc-950 tracking-tight">{formatKz(totalLucro)}</div>
-            <div className="flex items-center gap-1.5 mt-1 text-xs text-zinc-500 font-medium">
-              <span>Margem estimada de {margem}%</span>
-            </div>
-          </div>
-        </div>
 
-        {/* Ticket / Melhor Atendente */}
-        <div className="p-5 rounded-3xl bg-white border border-gray-100/90 shadow-xs hover:border-gray-200 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Destaque do Dia</span>
-            <div className="w-9 h-9 rounded-2xl bg-zinc-100 text-zinc-700 flex items-center justify-center">
-              <Trophy size={18} />
+            {/* Ticket / Melhor Atendente */}
+            <div className="p-5 rounded-3xl bg-white border border-gray-100/90 shadow-xs hover:border-gray-200 transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Destaque do Dia</span>
+                <div className="w-9 h-9 rounded-2xl bg-zinc-100 text-zinc-700 flex items-center justify-center">
+                  <Trophy size={18} />
+                </div>
+              </div>
+              <div className="mt-3">
+                <div className="text-2xl font-black text-zinc-950 tracking-tight">Maria Silva</div>
+                <div className="flex items-center gap-1.5 mt-1 text-xs text-zinc-500 font-medium">
+                  <span>91% da meta individual</span>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-black text-zinc-950 tracking-tight">Maria Silva</div>
-            <div className="flex items-center gap-1.5 mt-1 text-xs text-zinc-500 font-medium">
-              <span>91% da meta individual</span>
-            </div>
-          </div>
-        </div>
-      </motion.div>
+          </motion.div>
 
-      {/* 4. GRELHA DE METAS CADASTRADAS (ACOMPANHAMENTO DE TODAS AS METAS) */}
-      <motion.div variants={item} className="space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-zinc-950 text-white flex items-center justify-center">
-              <Sparkles size={18} className="text-[#E1FB15]" />
-            </div>
-            <div>
-              <h2 className="font-bold text-base text-zinc-950">Metas Cadastradas & Desempenho</h2>
-              <p className="text-xs text-zinc-400">Clique em qualquer meta para visualizar os detalhes no painel principal</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-gray-100 shadow-xs">
-              <button
-                type="button"
-                onClick={() => setGoalsFilter('ALL')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  goalsFilter === 'ALL'
-                    ? 'bg-zinc-950 text-white'
-                    : 'text-zinc-500 hover:text-zinc-900'
-                }`}
-              >
-                Todas ({goals.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setGoalsFilter('IN_PROGRESS')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  goalsFilter === 'IN_PROGRESS'
-                    ? 'bg-zinc-950 text-white'
-                    : 'text-zinc-500 hover:text-zinc-900'
-                }`}
-              >
-                Em Andamento
-              </button>
-              <button
-                type="button"
-                onClick={() => setGoalsFilter('COMPLETED')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  goalsFilter === 'COMPLETED'
-                    ? 'bg-zinc-950 text-white'
-                    : 'text-zinc-500 hover:text-zinc-900'
-                }`}
-              >
-                Concluídas
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {filteredGoals.map((goal) => {
-            const goalPct = Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100));
-            const isSelected = goal.id === selectedGoalId;
-            const isDone = goal.currentAmount >= goal.targetAmount;
-
-            return (
-              <div
-                key={goal.id}
-                onClick={() => {
-                  setSelectedGoalId(goal.id);
-                  showToast(`Exibindo "${goal.title}" no painel principal.`);
-                }}
-                className={`bg-white rounded-3xl p-5 border transition-all cursor-pointer relative group flex flex-col justify-between shadow-xs ${
-                  isSelected
-                    ? 'border-zinc-950 ring-2 ring-zinc-950/10'
-                    : 'border-gray-100 hover:border-zinc-300'
-                }`}
-              >
+          {/* 4. GRELHA DE METAS CADASTRADAS (ACOMPANHAMENTO DE TODAS AS METAS) */}
+          <motion.div variants={item} className="space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-zinc-950 text-white flex items-center justify-center">
+                  <Sparkles size={18} className="text-[#E1FB15]" />
+                </div>
                 <div>
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <span
-                      className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider ${
-                        goal.type === 'SALES'
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : goal.type === 'PROFIT'
-                          ? 'bg-amber-50 text-amber-700'
-                          : 'bg-purple-50 text-purple-700'
-                      }`}
-                    >
-                      {goal.type === 'SALES' ? 'Faturamento' : goal.type === 'PROFIT' ? 'Lucro' : 'Fat. & Lucro'}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(e) => handleDeleteGoal(goal.id, e)}
-                      title="Eliminar meta"
-                      className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-rose-600 transition-opacity cursor-pointer"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-
-                  <h3 className="text-sm font-black text-zinc-950 line-clamp-1">{goal.title}</h3>
-                  <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 mt-1">
-                    <User size={12} />
-                    <span className="font-medium truncate">{goal.attendantName}</span>
-                  </div>
-
-                  <div className="mt-4 space-y-1.5">
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-xs font-bold text-zinc-950">{formatKz(goal.currentAmount)}</span>
-                      <span className="text-[11px] font-black text-emerald-600">{goalPct}%</span>
-                    </div>
-                    <div className="h-2 w-full rounded-full bg-zinc-100 overflow-hidden">
-                      <motion.div
-                        className={`h-full rounded-full ${isDone ? 'bg-emerald-500' : 'bg-zinc-900'}`}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${goalPct}%` }}
-                        transition={{ duration: 0.8 }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between text-[10px] text-zinc-400">
-                      <span>Alvo: {formatKz(goal.targetAmount)}</span>
-                      <span className="flex items-center gap-0.5">
-                        <Clock size={10} /> {goal.dueDate}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-4 mt-4 border-t border-gray-100 flex items-center justify-between">
-                  <span className={`text-[10px] font-bold ${isSelected ? 'text-zinc-950 font-black' : 'text-zinc-400'}`}>
-                    {isSelected ? '● Em foco no Painel' : 'Clique para focar'}
-                  </span>
-                  {isDone ? (
-                    <span className="text-[10px] font-extrabold text-emerald-600 flex items-center gap-1">
-                      <CheckCircle2 size={12} /> Concluída
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-medium text-zinc-500">
-                      Faltam {formatKz(Math.max(0, goal.targetAmount - goal.currentAmount))}
-                    </span>
-                  )}
+                  <h2 className="font-bold text-base text-zinc-950">Metas Cadastradas & Desempenho</h2>
+                  <p className="text-xs text-zinc-400">Clique em qualquer meta para visualizar os detalhes no painel principal</p>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      </motion.div>
 
-      {/* 5. GRELHA: RANKING DA EQUIPA + GRÁFICO */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Ranking da equipa */}
-        <motion.div
-          variants={item}
-          className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs"
-        >
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h3 className="font-bold text-base text-zinc-950">Ranking da Equipa</h3>
-              <p className="text-xs text-zinc-400">Progresso individual de metas</p>
-            </div>
-            <select
-              value={selectedAttendant}
-              onChange={(e) => setSelectedAttendant(e.target.value)}
-              className="bg-zinc-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-zinc-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-zinc-950 cursor-pointer"
-            >
-              <option value="TODOS">Todos</option>
-              {INITIAL_TEAM.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-4">
-            {INITIAL_TEAM.filter((t) => selectedAttendant === 'TODOS' || t.id === selectedAttendant).map(
-              (member, idx) => {
-                const pct = Math.min(100, Math.round((member.current / member.target) * 100));
-                return (
-                  <div key={member.id} className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shrink-0 ${
-                          idx === 0
-                            ? 'bg-[#E1FB15] text-zinc-950'
-                            : 'bg-zinc-100 text-zinc-600'
-                        }`}
-                      >
-                        {idx + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-bold text-zinc-900 truncate">{member.name}</span>
-                          <span className="text-xs font-black text-zinc-950">{pct}%</span>
-                        </div>
-                        <span className="text-[10px] text-zinc-400 font-medium">{member.role}</span>
-                      </div>
-                    </div>
-                    <div className="h-2 w-full rounded-full bg-zinc-100 overflow-hidden">
-                      <motion.div
-                        className={`h-full rounded-full ${idx === 0 ? 'bg-emerald-500' : 'bg-zinc-800'}`}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ duration: 1, ease: 'easeOut', delay: 0.2 + idx * 0.1 }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between text-[10px] text-zinc-400 font-medium pl-11">
-                      <span>{formatKz(member.current)}</span>
-                      <span>meta {formatKz(member.target)}</span>
-                    </div>
-                  </div>
-                );
-              },
-            )}
-          </div>
-        </motion.div>
-
-        {/* Gráfico de desempenho */}
-        <motion.div
-          variants={item}
-          className="lg:col-span-2 bg-white border border-gray-100 rounded-3xl p-6 flex flex-col gap-4 shadow-xs"
-        >
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                <TrendingUp size={18} />
-              </div>
-              <div>
-                <h3 className="font-bold text-base text-zinc-950">Curva de Faturamento</h3>
-                <p className="text-xs text-zinc-400">Evolução ao longo do período</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap">
-              <select
-                value={goalTypeFilter}
-                onChange={(e) => setGoalTypeFilter(e.target.value)}
-                className="bg-zinc-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-zinc-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-zinc-950 cursor-pointer"
-              >
-                <option value="TODOS">Faturamento & Lucro</option>
-                <option value="SALES">Faturamento</option>
-                <option value="PROFIT">Lucro</option>
-              </select>
-              <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-xl border border-gray-100">
-                {['1D', '1W', '1M', '1Y', 'ALL'].map((f) => (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-gray-100 shadow-xs">
                   <button
-                    key={f}
                     type="button"
-                    onClick={() => setTimeFilter(f)}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer ${
-                      timeFilter === f
-                        ? 'bg-zinc-950 text-[#E1FB15]'
+                    onClick={() => setGoalsFilter('ALL')}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      goalsFilter === 'ALL'
+                        ? 'bg-zinc-950 text-white'
                         : 'text-zinc-500 hover:text-zinc-900'
                     }`}
                   >
-                    {f}
+                    Todas ({goals.length})
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    onClick={() => setGoalsFilter('IN_PROGRESS')}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      goalsFilter === 'IN_PROGRESS'
+                        ? 'bg-zinc-950 text-white'
+                        : 'text-zinc-500 hover:text-zinc-900'
+                    }`}
+                  >
+                    Em Andamento
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setGoalsFilter('COMPLETED')}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      goalsFilter === 'COMPLETED'
+                        ? 'bg-zinc-950 text-white'
+                        : 'text-zinc-500 hover:text-zinc-900'
+                    }`}
+                  >
+                    Concluídas
+                  </button>
+                </div>
               </div>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {filteredGoals.map((goal) => {
+                const goalPct = Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100));
+                const isSelected = goal.id === selectedGoalId;
+                const isDone = goal.currentAmount >= goal.targetAmount || goalPct >= 100;
+                const remaining = Math.max(0, goal.targetAmount - goal.currentAmount);
+                const surplus = isDone ? Math.max(0, goal.currentAmount - goal.targetAmount) : 0;
+
+                return (
+                  <motion.div
+                    key={goal.id}
+                    whileHover={{ y: -4 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={() => {
+                      setSelectedGoalId(goal.id);
+                      showToast(`Exibindo "${goal.title}" no painel principal.`);
+                    }}
+                    className={`rounded-3xl p-5 border transition-all cursor-pointer relative group flex flex-col justify-between shadow-xs ${
+                      isDone
+                        ? isSelected
+                          ? 'bg-gradient-to-b from-emerald-50/50 via-white to-white border-2 border-emerald-500 ring-2 ring-emerald-500/20 shadow-md shadow-emerald-500/10'
+                          : 'bg-gradient-to-b from-emerald-50/40 via-white to-white border-2 border-emerald-500/80 hover:border-emerald-500 hover:shadow-lg shadow-xs'
+                        : isSelected
+                        ? 'bg-white border-zinc-950 ring-2 ring-zinc-950/10 shadow-md'
+                        : 'bg-white border-gray-100 hover:border-zinc-300 hover:shadow-lg'
+                    }`}
+                  >
+                    {/* SELO DE META BATIDA NO CANTO DO CARD */}
+                    {isDone && (
+                      <div className="absolute -top-3 right-5 z-20 flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider shadow-sm border border-emerald-400">
+                        <Trophy size={11} className="text-[#E1FB15]" />
+                        <span>Meta Batida</span>
+                      </div>
+                    )}
+
+                    {/* TOOLTIP FLUTUANTE NO HOVER */}
+                    <div className="absolute -top-11 left-1/2 -translate-x-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0 z-30 whitespace-nowrap bg-zinc-950 text-white text-[10px] font-bold px-3 py-1.5 rounded-xl shadow-xl border border-zinc-800 flex items-center gap-2">
+                      {isDone ? (
+                        <>
+                          <Trophy size={11} className="text-[#E1FB15]" />
+                          <span className="text-[#32D583]">🏆 META BATIDA COM SUCESSO!</span>
+                          <span className="text-zinc-500">•</span>
+                          <span>Criada: {goal.createdAt || 'Recentemente'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Calendar size={11} className="text-[#E1FB15]" />
+                          <span>Criada: {goal.createdAt || 'Recentemente'}</span>
+                          <span className="text-zinc-500">•</span>
+                          <span className="text-[#32D583]">Faltam {formatKz(remaining)}</span>
+                        </>
+                      )}
+                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-zinc-950 rotate-45 border-r border-b border-zinc-800" />
+                    </div>
+
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span
+                            className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                              goal.type === 'SALES'
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : goal.type === 'PROFIT'
+                                ? 'bg-amber-50 text-amber-700'
+                                : 'bg-purple-50 text-purple-700'
+                            }`}
+                          >
+                            {goal.type === 'SALES' ? 'Faturamento' : goal.type === 'PROFIT' ? 'Lucro' : 'Fat. & Lucro'}
+                          </span>
+                          {isDone && (
+                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                              <Sparkles size={10} /> 100%
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteGoal(goal.id, e)}
+                          title="Eliminar meta"
+                          className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-rose-600 transition-opacity cursor-pointer"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+
+                      <h3 className="text-sm font-black text-zinc-950 line-clamp-1">{goal.title}</h3>
+                      <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 mt-1">
+                        <User size={12} />
+                        <span className="font-medium truncate">{goal.attendantName}</span>
+                      </div>
+
+                      <div className={`mt-4 space-y-1.5 p-3 rounded-2xl border ${
+                        isDone ? 'bg-emerald-50/70 border-emerald-200/80' : 'bg-zinc-50/70 border-gray-100'
+                      }`}>
+                        <div className="flex items-baseline justify-between">
+                          <span className="text-xs font-bold text-zinc-950">{formatKz(goal.currentAmount)}</span>
+                          <span className={`text-[11px] font-black ${isDone ? 'text-emerald-700 font-extrabold' : 'text-emerald-600'}`}>{goalPct}%</span>
+                        </div>
+                        <div className="h-2 w-full rounded-full bg-zinc-200/80 overflow-hidden">
+                          <motion.div
+                            className={`h-full rounded-full ${isDone ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-gradient-to-r from-emerald-500 to-[#E1FB15]'}`}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${goalPct}%` }}
+                            transition={{ duration: 0.8 }}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] text-zinc-400 pt-0.5">
+                          <span>Alvo: {formatKz(goal.targetAmount)}</span>
+                          <span className="flex items-center gap-0.5 font-medium text-zinc-600">
+                            <Clock size={10} /> Limite: {goal.dueDate}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* PAINEL EXPANSÍVEL NO HOVER */}
+                      <div className="overflow-hidden max-h-0 group-hover:max-h-36 transition-all duration-300 ease-in-out opacity-0 group-hover:opacity-100">
+                        <div className="mt-2 pt-2 border-t border-dashed border-gray-200 space-y-1.5 text-[11px]">
+                          <div className="flex items-center justify-between p-2 rounded-xl bg-zinc-900 text-white">
+                            <span className="text-zinc-400">{isDone ? 'Status da Meta:' : 'Restante para Meta:'}</span>
+                            <span className="font-black text-[#E1FB15]">{isDone ? (surplus > 0 ? `Superada (+${formatKz(surplus)})` : 'Meta Atingida (100%)') : formatKz(remaining)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-zinc-500 px-1">
+                            <span>Data de Criação:</span>
+                            <span className="font-semibold text-zinc-700">{goal.createdAt || 'N/D'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 mt-3 border-t border-gray-100 flex items-center justify-between">
+                      <span className={`text-[10px] font-bold ${isSelected ? 'text-zinc-950 font-black' : 'text-zinc-400'}`}>
+                        {isSelected ? '● Em foco no Painel' : 'Clique para focar'}
+                      </span>
+                      {isDone ? (
+                        <span className="text-[10px] font-extrabold text-emerald-700 flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          <CheckCircle2 size={12} className="text-emerald-600" /> Meta Batida
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-medium text-zinc-600">
+                          Faltam <strong className="text-zinc-950">{formatKz(remaining)}</strong>
+                        </span>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+
+          {/* 5. GRELHA: RANKING DA EQUIPA + GRÁFICO */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Ranking da equipa */}
+            <motion.div
+              variants={item}
+              className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs"
+            >
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h3 className="font-bold text-base text-zinc-950">Ranking de Vendas da Equipa</h3>
+                  <p className="text-xs text-zinc-400">Progresso individual de metas</p>
+                </div>
+                <select
+                  value={selectedAttendant}
+                  onChange={(e) => setSelectedAttendant(e.target.value)}
+                  className="bg-zinc-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-zinc-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-zinc-950 cursor-pointer"
+                >
+                  <option value="TODOS">Todos</option>
+                  {INITIAL_TEAM.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-4">
+                {INITIAL_TEAM.filter((t) => selectedAttendant === 'TODOS' || t.id === selectedAttendant).map(
+                  (member, idx) => {
+                    const pct = Math.min(100, Math.round((member.current / member.target) * 100));
+                    return (
+                      <div key={member.id} className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shrink-0 ${
+                              idx === 0
+                                ? 'bg-[#E1FB15] text-zinc-950'
+                                : 'bg-zinc-100 text-zinc-600'
+                            }`}
+                          >
+                            {idx + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-sm font-bold text-zinc-900 truncate">{member.name}</span>
+                              <span className="text-xs font-black text-zinc-950">{pct}%</span>
+                            </div>
+                            <span className="text-[10px] text-zinc-400 font-medium">{member.role}</span>
+                          </div>
+                        </div>
+                        <div className="h-2 w-full rounded-full bg-zinc-100 overflow-hidden">
+                          <motion.div
+                            className={`h-full rounded-full ${idx === 0 ? 'bg-emerald-500' : 'bg-zinc-800'}`}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${pct}%` }}
+                            transition={{ duration: 1, ease: 'easeOut', delay: 0.2 + idx * 0.1 }}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] text-zinc-400 font-medium pl-11">
+                          <span>{formatKz(member.current)}</span>
+                          <span>meta {formatKz(member.target)}</span>
+                        </div>
+                      </div>
+                    );
+                  },
+                )}
+              </div>
+            </motion.div>
+
+            {/* Gráfico de desempenho */}
+            <motion.div
+              variants={item}
+              className="lg:col-span-2 bg-white border border-gray-100 rounded-3xl p-6 flex flex-col gap-4 shadow-xs"
+            >
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <TrendingUp size={18} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base text-zinc-950">Curva de Faturamento</h3>
+                    <p className="text-xs text-zinc-400">Evolução ao longo do período</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <select
+                    value={goalTypeFilter}
+                    onChange={(e) => setGoalTypeFilter(e.target.value)}
+                    className="bg-zinc-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-zinc-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-zinc-950 cursor-pointer"
+                  >
+                    <option value="TODOS">Faturamento & Lucro</option>
+                    <option value="SALES">Faturamento</option>
+                    <option value="PROFIT">Lucro</option>
+                  </select>
+                  <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-xl border border-gray-100">
+                    {['1D', '1W', '1M', '1Y', 'ALL'].map((f) => (
+                      <button
+                        key={f}
+                        type="button"
+                        onClick={() => setTimeFilter(f)}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer ${
+                          timeFilter === f
+                            ? 'bg-zinc-950 text-[#E1FB15]'
+                            : 'text-zinc-500 hover:text-zinc-900'
+                        }`}
+                      >
+                        {f}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="h-72 w-full pt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={PERFORMANCE_DATA} margin={{ top: 6, right: 6, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4f4f5" />
+                    <XAxis dataKey="time" stroke="#a1a1aa" fontSize={10} tickLine={false} axisLine={false} />
+                    <YAxis hide />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#09090b',
+                        borderColor: '#09090b',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        color: '#fff',
+                      }}
+                      labelStyle={{ color: '#a1a1aa' }}
+                      formatter={(value: number, name: string) => [
+                        formatKz(value),
+                        name === 'sales' ? 'Faturamento' : 'Lucro',
+                      ]}
+                    />
+                    {goalTypeFilter !== 'PROFIT' && (
+                      <Area
+                        type="monotone"
+                        dataKey="sales"
+                        stroke="#10b981"
+                        strokeWidth={3}
+                        fillOpacity={1}
+                        fill="url(#colorSales)"
+                      />
+                    )}
+                    {goalTypeFilter !== 'SALES' && (
+                      <Area
+                        type="monotone"
+                        dataKey="profit"
+                        stroke="#f59e0b"
+                        strokeWidth={2.5}
+                        fillOpacity={1}
+                        fill="url(#colorProfit)"
+                      />
+                    )}
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </motion.div>
           </div>
 
-          <div className="h-72 w-full pt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={PERFORMANCE_DATA} margin={{ top: 6, right: 6, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4f4f5" />
-                <XAxis dataKey="time" stroke="#a1a1aa" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis hide />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#09090b',
-                    borderColor: '#09090b',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    color: '#fff',
-                  }}
-                  labelStyle={{ color: '#a1a1aa' }}
-                  formatter={(value: number, name: string) => [
-                    formatKz(value),
-                    name === 'sales' ? 'Faturamento' : 'Lucro',
-                  ]}
-                />
-                {goalTypeFilter !== 'PROFIT' && (
-                  <Area
-                    type="monotone"
-                    dataKey="sales"
-                    stroke="#10b981"
-                    strokeWidth={3}
-                    fillOpacity={1}
-                    fill="url(#colorSales)"
-                  />
-                )}
-                {goalTypeFilter !== 'SALES' && (
-                  <Area
-                    type="monotone"
-                    dataKey="profit"
-                    stroke="#f59e0b"
-                    strokeWidth={2.5}
-                    fillOpacity={1}
-                    fill="url(#colorProfit)"
-                  />
-                )}
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </motion.div>
-      </div>
+      {/* 6. MÓDULO DE TEMPO DE ATENDIMENTO & RENDIMENTO (TODOS OS CARDS COM FUNDO BRANCO POSICIONADOS ABAIXO DE TODOS OS OUTROS) */}
+      <motion.div variants={item} className="space-y-4 pt-2">
+        <AttendanceStatsModule />
+      </motion.div>
 
       {/* Modal de Nova Meta */}
       {isModalOpen && (

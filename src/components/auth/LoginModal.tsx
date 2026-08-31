@@ -146,21 +146,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative z-10 w-full max-w-6xl grid lg:grid-cols-[1.05fr_0.95fr] items-center gap-8 lg:gap-16">
-        {/* Editorial brand panel inspired by the supplied reference */}
+        {/* Editorial brand panel */}
         <section className="hidden lg:flex min-h-[680px] flex-col justify-center items-center px-6 py-8" aria-label="Marca Masakula">
           <div className="flex flex-col items-center gap-10">
-            <div className="relative w-full max-w-[520px] h-[380px]">
-              {/* Flores - topo esquerdo */}
-              <img src="/collage/flores.png" alt="Composição floral editorial Masakula" className="absolute left-8 top-0 h-32 w-44 rounded-[2rem] object-cover object-center shadow-sm" />
-              {/* Unhas - topo direito pequeno */}
-              <img src="/collage/nails.png" alt="Detalhe editorial de beleza" className="absolute right-4 top-16 h-32 w-28 rounded-[1.75rem] object-cover object-center shadow-sm" />
-              {/* Hero central - retrato */}
-              <img src="/collage/hero.png" alt="Retrato editorial vibrante Masakula" className="absolute left-1/2 top-12 -translate-x-1/2 h-56 w-48 rounded-[2rem] object-cover object-center shadow-lg ring-1 ring-black/5" />
-              {/* Moletom verde - baixo esquerdo */}
-              <img src="/collage/hoodie.png" alt="Moda streetwear em verde lima" className="absolute left-4 bottom-0 h-48 w-40 rounded-[2rem] object-cover object-center shadow-md" />
-              {/* Sofá laranja - baixo direito */}
-              <img src="/collage/sofa.png" alt="Interior editorial com sofá laranja" className="absolute right-0 bottom-4 h-32 w-44 rounded-[1.75rem] object-cover object-center shadow-sm" />
-            </div>
             <div className="max-w-md text-center">
               <p className="text-6xl font-black leading-[1.05] tracking-tight text-zinc-950">Masakula</p>
               <p className="mt-6 text-3xl font-black leading-[1.1] tracking-tight text-zinc-900">“Um nome,<br />várias soluções”</p>

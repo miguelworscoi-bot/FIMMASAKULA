@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Upload, X, Image as ImageIcon, Trash2, RefreshCw, Check } from "lucide-react";
+import { Upload, X, Image as ImageIcon, Trash2, RefreshCw, Check, Sparkles } from "lucide-react";
 import { BorderParticles } from "./admin/BorderParticles";
+import { SmartProductImageUpload } from "./SmartProductImageUpload";
 import { Product } from "../types";
 
 export interface ProductFormData {
@@ -26,6 +27,7 @@ export function ProductFormModal({ onClose, onSave, productToEdit }: ProductForm
   const [isDragging, setIsDragging] = useState(false);
   const [showParticles, setShowParticles] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadMode, setUploadMode] = useState<"smart" | "standard">("smart");
 
   useEffect(() => {
     if (productToEdit) {
@@ -150,82 +152,123 @@ export function ProductFormModal({ onClose, onSave, productToEdit }: ProductForm
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Box de Preview / Edição / Remoção da Imagem com Partículas Verdes da Borda */}
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            style={showParticles ? { animation: "borderGlowPulse 1.8s ease-in-out infinite" } : undefined}
-            className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-4 transition-all duration-300 relative overflow-visible ${
-              showParticles || previewUrl
-                ? "border-[#32D583] bg-emerald-50/20"
-                : isDragging
-                ? "border-[#E1FB15] bg-lime-50/50 scale-[0.99]"
-                : "border-neutral-300 bg-neutral-50 hover:bg-neutral-100"
-            }`}
-          >
-            {/* Emissão de Partículas Verdes a partir da Borda Pontilhada */}
-            <BorderParticles active={showParticles} count={32} />
-
-            {previewUrl ? (
-              <div className="flex flex-col items-center gap-3 w-full py-1">
-                <div className="relative w-32 h-32 flex items-center justify-center bg-white rounded-xl p-2 border border-neutral-200/80 shadow-xs">
-                  <img
-                    src={previewUrl}
-                    alt="Preview"
-                    referrerPolicy="no-referrer"
-                    className="max-h-28 w-auto object-contain animate-in zoom-in-75 duration-300 drop-shadow-md pointer-events-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleRemoveImage}
-                    title="Eliminar Foto"
-                    className="absolute -top-2 -right-2 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-1.5 shadow-md transition-colors cursor-pointer z-10"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                {/* Ações Rápidas: Trocar Imagem ou Eliminar */}
-                <div className="flex items-center gap-2">
-                  <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-black text-white text-xs font-semibold cursor-pointer transition shadow-xs">
-                    <RefreshCw className="w-3.5 h-3.5 text-[#32D583]" />
-                    <span>Trocar Foto</span>
-                    <input
-                      type="file"
-                      accept="image/png,image/webp,image/jpeg"
-                      className="hidden"
-                      onChange={handleImageChange}
-                    />
-                  </label>
-
-                  <button
-                    type="button"
-                    onClick={handleRemoveImage}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-semibold cursor-pointer transition"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Eliminar</span>
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <label className="flex flex-col items-center cursor-pointer py-3 w-full text-center">
-                <div className="w-12 h-12 rounded-2xl bg-neutral-200/60 flex items-center justify-center text-neutral-500 mb-2">
-                  <ImageIcon className="w-6 h-6 text-neutral-500" />
-                </div>
-                <span className="text-xs font-bold text-neutral-800">Carregar Foto / PNG sem fundo</span>
-                <span className="text-[11px] text-neutral-400 mt-0.5">Arraste ou clique para selecionar</span>
-                <span className="text-[10px] text-emerald-600 font-medium mt-1">Recomendado: 400x400px transparente</span>
-                <input
-                  type="file"
-                  accept="image/png,image/webp,image/jpeg"
-                  className="hidden"
-                  onChange={handleImageChange}
-                />
-              </label>
-            )}
+          {/* Seletor de Modo de Carregamento */}
+          <div className="flex items-center gap-2 bg-neutral-100 p-1 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setUploadMode("smart")}
+              className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                uploadMode === "smart"
+                  ? "bg-neutral-900 text-white shadow-xs"
+                  : "text-neutral-500 hover:text-neutral-900"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#E1FB15]" />
+              <span>Remover Fundo IA</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setUploadMode("standard")}
+              className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                uploadMode === "standard"
+                  ? "bg-neutral-900 text-white shadow-xs"
+                  : "text-neutral-500 hover:text-neutral-900"
+              }`}
+            >
+              <ImageIcon className="w-3.5 h-3.5" />
+              <span>Upload Normal</span>
+            </button>
           </div>
+
+          {/* Modo 1: Smart AI Background Removal */}
+          {uploadMode === "smart" ? (
+            <SmartProductImageUpload
+              initialImageUrl={previewUrl}
+              onImageProcessed={(url, blob) => {
+                setPreviewUrl(url);
+                const file = new File([blob], "processed_product.webp", { type: "image/webp" });
+                setImageFile(file);
+                triggerParticles();
+              }}
+            />
+          ) : (
+            /* Modo 2: Standard Upload com Partículas */
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              style={showParticles ? { animation: "borderGlowPulse 1.8s ease-in-out infinite" } : undefined}
+              className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-4 transition-all duration-300 relative overflow-visible ${
+                showParticles || previewUrl
+                  ? "border-[#32D583] bg-emerald-50/20"
+                  : isDragging
+                  ? "border-[#E1FB15] bg-lime-50/50 scale-[0.99]"
+                  : "border-neutral-300 bg-neutral-50 hover:bg-neutral-100"
+              }`}
+            >
+              {/* Emissão de Partículas Verdes a partir da Borda Pontilhada */}
+              <BorderParticles active={showParticles} count={32} />
+
+              {previewUrl ? (
+                <div className="flex flex-col items-center gap-3 w-full py-1">
+                  <div className="relative w-32 h-32 flex items-center justify-center bg-white rounded-xl p-2 border border-neutral-200/80 shadow-xs">
+                    <img
+                      src={previewUrl}
+                      alt="Preview"
+                      referrerPolicy="no-referrer"
+                      className="max-h-28 w-auto object-contain animate-in zoom-in-75 duration-300 drop-shadow-md pointer-events-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      title="Eliminar Foto"
+                      className="absolute -top-2 -right-2 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-1.5 shadow-md transition-colors cursor-pointer z-10"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Ações Rápidas: Trocar Imagem ou Eliminar */}
+                  <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-black text-white text-xs font-semibold cursor-pointer transition shadow-xs">
+                      <RefreshCw className="w-3.5 h-3.5 text-[#32D583]" />
+                      <span>Trocar Foto</span>
+                      <input
+                        type="file"
+                        accept="image/png,image/webp,image/jpeg"
+                        className="hidden"
+                        onChange={handleImageChange}
+                      />
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-semibold cursor-pointer transition"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Eliminar</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center cursor-pointer py-3 w-full text-center">
+                  <div className="w-12 h-12 rounded-2xl bg-neutral-200/60 flex items-center justify-center text-neutral-500 mb-2">
+                    <ImageIcon className="w-6 h-6 text-neutral-500" />
+                  </div>
+                  <span className="text-xs font-bold text-neutral-800">Carregar Foto / PNG sem fundo</span>
+                  <span className="text-[11px] text-neutral-400 mt-0.5">Arraste ou clique para selecionar</span>
+                  <span className="text-[10px] text-emerald-600 font-medium mt-1">Recomendado: 400x400px transparente</span>
+                  <input
+                    type="file"
+                    accept="image/png,image/webp,image/jpeg"
+                    className="hidden"
+                    onChange={handleImageChange}
+                  />
+                </label>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="text-xs font-semibold text-neutral-700 block mb-1">Nome do Artigo</label>

@@ -29,7 +29,6 @@ import { CashSessionView } from '../views/CashSessionView';
 import { ExpensesView } from '../views/ExpensesView';
 import { CustomersView } from '../views/CustomersView';
 import { GoalsView } from '../views/GoalsView';
-import { AttendanceStatsModule } from '../views/AttendanceStatsView';
 import { ReportsView } from '../views/ReportsView';
 import { SettingsView } from '../views/SettingsView';
 import { BusinessIntelligenceScreen } from '../BusinessIntelligenceScreen';
@@ -405,7 +404,7 @@ export const AppShell: React.FC<AppShellProps> = ({
         );
       case 'attendance':
         return (
-          <AttendanceStatsModule />
+          <GoalsView initialTab="attendance" />
         );
       case 'reports':
         return (

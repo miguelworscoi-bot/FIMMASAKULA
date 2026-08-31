@@ -1,6 +1,12 @@
 // Main System Export
 export { MasakulaSystem, default } from '../App';
 export { AnimatedIcon, type AnimationType } from './AnimatedIcon';
+export { SmartProductImageUpload } from './SmartProductImageUpload';
+export { CreateMetaModal } from './admin/CreateMetaModal';
+export { CreateProductForm } from './admin/CreateProductForm';
+export { ProductCarousel3D } from './pdv/carousel-3d';
+export { default as PosPage } from '../screens/PosPage';
+export { default as MetasPage } from '../screens/MetasPage';
 
 // Layout Submodules
 export { Sidebar } from './layout/Sidebar';
