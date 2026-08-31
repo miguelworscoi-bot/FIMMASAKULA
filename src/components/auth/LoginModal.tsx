@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, KeyboardEvent, ClipboardEvent } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Lock, 
   Mail, 
@@ -18,7 +19,9 @@ import {
   LayoutGrid,
   ChevronRight,
   Shield,
-  Sparkles
+  Sparkles,
+  Check,
+  Loader2
 } from 'lucide-react';
 import { UserSession } from '../../types';
 import { useAuth, UserRole, DEMO_PROFILES } from '../../contexts/AuthContext';
@@ -38,9 +41,20 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
   // Form State
   const [email, setEmail] = useState('admin@masakula.co.ao');
-  const [password, setPassword] = useState('admin2026');
-  const [showPassword, setShowPassword] = useState(false);
+  const [password, setPassword] = useState('5464');
   const [rememberMe, setRememberMe] = useState(true);
+
+  // PIN Input State
+  const [pin, setPin] = useState<string[]>(['5', '4', '6', '4']);
+  const [pinStatus, setPinStatus] = useState<'idle' | 'verifying' | 'success' | 'error'>('idle');
+
+  // Input refs for 4 PIN boxes
+  const pinInputRefs = [
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+  ];
 
   // Step 2 Selection State
   const [selectedTerminal, setSelectedTerminal] = useState('Caixa 01 - Balcão Principal');
@@ -54,6 +68,89 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loginSuccessNotice, setLoginSuccessNotice] = useState(false);
 
+  // Handle PIN change
+  const handlePinChange = (index: number, value: string) => {
+    if (pinStatus === 'success' || pinStatus === 'verifying') return;
+
+    const digit = value.replace(/\D/g, '').slice(-1);
+    const newPin = [...pin];
+    newPin[index] = digit;
+    setPin(newPin);
+    setPassword(newPin.join(''));
+
+    if (digit && index < 3) {
+      pinInputRefs[index + 1].current?.focus();
+    }
+
+    if (newPin.every((d) => d !== '') && digit !== '') {
+      verifyAndAdvance(newPin.join(''));
+    }
+  };
+
+  // Handle PIN keydown backspace
+  const handlePinKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace') {
+      if (!pin[index] && index > 0) {
+        pinInputRefs[index - 1].current?.focus();
+      }
+      setPinStatus('idle');
+      setErrorMessage(null);
+    }
+  };
+
+  // Handle PIN paste
+  const handlePinPaste = (e: ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 4);
+
+    if (pastedData.length === 4) {
+      const newPin = pastedData.split('');
+      setPin(newPin);
+      setPassword(pastedData);
+      pinInputRefs[3].current?.focus();
+      verifyAndAdvance(pastedData);
+    }
+  };
+
+  // Verify PIN with animation
+  const verifyAndAdvance = async (fullPin: string) => {
+    setPinStatus('verifying');
+    setErrorMessage(null);
+
+    await new Promise((res) => setTimeout(res, 500));
+
+    // Valid PIN check strictly against registered credentials
+    const validPins: Record<string, { role: UserRole; name: string }> = {
+      '5464': { role: 'GERENTE', name: 'Administrador Geral' },
+      '1234': { role: 'CAIXA', name: 'Operador de Caixa' },
+      '0000': { role: 'GERENTE', name: 'Gerente Master' },
+      '2026': { role: 'GERENTE', name: 'Gestão 2026' },
+    };
+
+    // Check if user is in demo mode with specific credentials
+    const targetMatch = validPins[fullPin];
+
+    if (targetMatch) {
+      setPinStatus('success');
+
+      // Set matched role or keep explicit role if matched
+      setSelectedRole(targetMatch.role);
+
+      setTimeout(() => {
+        setPinStatus('idle');
+        setCurrentStep(2);
+      }, 900);
+    } else {
+      setPinStatus('error');
+      setErrorMessage('Código PIN incorreto. Introduza um PIN válido de 4 dígitos (ex: 5464 para Gerente ou 1234 para Caixa).');
+      setTimeout(() => {
+        setPin(['', '', '', '']);
+        pinInputRefs[0].current?.focus();
+        setPinStatus('idle');
+      }, 1200);
+    }
+  };
+
   // Handle Step 1 Validation & Proceed to Step 2
   const handleProceedToStep2 = (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,19 +161,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       return;
     }
 
-    if (!password || password.trim().length < 4) {
-      setErrorMessage('A palavra-passe deve conter pelo menos 4 caracteres.');
+    const currentPin = pin.join('');
+    if (currentPin.length !== 4) {
+      setErrorMessage('O código PIN de operador deve conter exatamente 4 dígitos.');
       return;
     }
 
-    // Auto-detect role from credentials
-    if (email.toLowerCase().includes('caixa') || email.toLowerCase().includes('operador')) {
-      setSelectedRole('CAIXA');
-    } else {
-      setSelectedRole('GERENTE');
-    }
-
-    setCurrentStep(2);
+    verifyAndAdvance(currentPin);
   };
 
   // Handle Final Submission (Step 2)
@@ -124,15 +215,19 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const handleQuickFill = (role: UserRole) => {
     if (role === 'GERENTE') {
       setEmail('admin@masakula.co.ao');
-      setPassword('admin2026');
+      setPassword('5464');
+      setPin(['5', '4', '6', '4']);
       setSelectedRole('GERENTE');
       setSelectedTerminal('Terminal Master 01 - Gestão');
     } else {
       setEmail('caixa@masakula.co.ao');
-      setPassword('operador2026');
+      setPassword('1234');
+      setPin(['1', '2', '3', '4']);
       setSelectedRole('CAIXA');
       setSelectedTerminal('Caixa 01 - Balcão Principal');
     }
+    setPinStatus('idle');
+    setErrorMessage(null);
   };
 
   return (
@@ -310,53 +405,143 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               />
             </div>
 
-            {/* Password Field with Toggle */}
-            <div className="space-y-1.5">
+            {/* 🔮 ÁREA DOS 4 DÍGITOS DO PIN COM ANIMAÇÃO E FEEDBACK VISUAL */}
+            <div className="space-y-2 pt-1">
               <div className="flex items-center justify-between">
                 <label className="font-semibold text-zinc-800 flex items-center gap-1.5">
                   <KeyRound size={14} className="text-zinc-500" />
-                  <span>Palavra-passe</span>
+                  <span>Código PIN do Operador (4 Dígitos)</span>
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="text-[11px] text-zinc-500 hover:text-zinc-900 font-medium flex items-center gap-1 transition-colors cursor-pointer"
-                >
-                  {showPassword ? (
-                    <>
-                      <EyeOff size={13} />
-                      <span>Ocultar</span>
-                    </>
-                  ) : (
-                    <>
-                      <Eye size={13} />
-                      <span>Visualizar</span>
-                    </>
-                  )}
-                </button>
+                <span className="text-[11px] text-zinc-400 font-medium">
+                  {pinStatus === 'verifying' ? 'A verificar...' : 'Autenticação rápida'}
+                </span>
               </div>
 
-              <div className="relative">
-                <input
-                  id="login-input-password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="w-full px-3.5 py-3 pr-10 rounded-2xl bg-zinc-50 border border-gray-200 text-zinc-900 focus:bg-white focus:ring-2 focus:ring-zinc-950 focus:outline-none font-mono transition-colors"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 cursor-pointer"
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
+              {/* Contêiner dos 4 Quadrados / Banner de Sucesso */}
+              <div className="relative w-full flex justify-center items-center min-h-[72px] py-1">
+                <AnimatePresence mode="wait">
+                  {pinStatus !== 'success' ? (
+                    <motion.div
+                      key="pin-boxes"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      className="flex items-center gap-2.5 sm:gap-3"
+                    >
+                      {pin.map((digit, index) => (
+                        <motion.div
+                          key={index}
+                          animate={
+                            pinStatus === 'error'
+                              ? { x: [-6, 6, -4, 4, 0] }
+                              : { scale: digit ? 1.04 : 1 }
+                          }
+                          transition={{ duration: 0.25 }}
+                          className={`relative w-12 sm:w-14 h-14 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-300 overflow-hidden shadow-sm ${
+                            digit
+                              ? 'border-2 border-sky-400 shadow-lg shadow-sky-400/25 ring-2 ring-sky-300/40'
+                              : 'bg-zinc-50 border-2 border-zinc-200 text-zinc-900 hover:border-zinc-300'
+                          }`}
+                        >
+                          {/* Animação de Onda Subindo em Azul Bebé */}
+                          <AnimatePresence>
+                            {digit && (
+                              <motion.div
+                                initial={{ y: '100%', opacity: 0 }}
+                                animate={{ y: '0%', opacity: 1 }}
+                                exit={{ y: '100%', opacity: 0 }}
+                                transition={{ type: 'spring', stiffness: 240, damping: 22 }}
+                                className="absolute inset-0 z-0 bg-gradient-to-t from-sky-400 via-sky-300 to-sky-200 pointer-events-none"
+                              >
+                                {/* Cristas de onda animadas no topo */}
+                                <motion.svg
+                                  className="absolute -top-3 left-0 w-[200%] h-4 text-sky-200 fill-current opacity-85 pointer-events-none"
+                                  viewBox="0 0 100 20"
+                                  preserveAspectRatio="none"
+                                  animate={{ x: ['0%', '-50%'] }}
+                                  transition={{ repeat: Infinity, ease: 'linear', duration: 2.2 }}
+                                >
+                                  <path d="M0 10 Q 12.5 0, 25 10 T 50 10 T 75 10 T 100 10 V 20 H 0 Z" />
+                                </motion.svg>
+                                <motion.svg
+                                  className="absolute -top-2 left-0 w-[200%] h-3 text-sky-100/70 fill-current pointer-events-none"
+                                  viewBox="0 0 100 20"
+                                  preserveAspectRatio="none"
+                                  animate={{ x: ['-50%', '0%'] }}
+                                  transition={{ repeat: Infinity, ease: 'linear', duration: 3 }}
+                                >
+                                  <path d="M0 10 Q 12.5 20, 25 10 T 50 10 T 75 10 T 100 10 V 20 H 0 Z" />
+                                </motion.svg>
+
+                                {/* Brilho suave superior */}
+                                <div className="absolute inset-0 bg-gradient-to-b from-white/35 via-transparent to-black/5 pointer-events-none" />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+
+                          <input
+                            id={index === 0 ? "login-input-password" : `login-input-pin-${index}`}
+                            ref={pinInputRefs[index]}
+                            type="password"
+                            inputMode="numeric"
+                            maxLength={1}
+                            value={digit}
+                            onChange={(e) => handlePinChange(index, e.target.value)}
+                            onKeyDown={(e) => handlePinKeyDown(index, e)}
+                            onPaste={handlePinPaste}
+                            disabled={pinStatus === 'verifying'}
+                            className={`w-full h-full text-center text-2xl font-black bg-transparent outline-none cursor-pointer relative z-10 transition-colors ${
+                              digit ? 'text-slate-950 font-black' : 'text-zinc-900'
+                            }`}
+                          />
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  ) : (
+                    /* Banner Verde Fluido de Sucesso */
+                    <motion.div
+                      key="success-banner"
+                      initial={{ scale: 0.85, opacity: 0, y: 8 }}
+                      animate={{ scale: 1, opacity: 1, y: 0 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                      className="w-full py-3 px-5 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-2xl shadow-lg shadow-emerald-500/25 border border-emerald-300/40 flex items-center justify-center gap-5 text-slate-950"
+                    >
+                      <div className="flex items-center gap-3 text-xl font-black tracking-widest">
+                        {pin.map((d, i) => (
+                          <motion.span
+                            key={i}
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: i * 0.06 }}
+                          >
+                            {d}
+                          </motion.span>
+                        ))}
+                      </div>
+
+                      <motion.div
+                        initial={{ scale: 0, rotate: -45 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ delay: 0.2, type: 'spring' }}
+                        className="w-6 h-6 bg-slate-950 text-[#32D583] rounded-full flex items-center justify-center shadow-xs"
+                      >
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
+
+              {/* Indicador de verificação em progresso */}
+              {pinStatus === 'verifying' && (
+                <div className="flex items-center justify-center gap-2 text-xs font-semibold text-indigo-600 pt-1">
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>A validar código PIN...</span>
+                </div>
+              )}
             </div>
 
-            {/* Remember Me & Matrix Link */}
+            {/* Remember Me & Quick Reset */}
             <div className="flex items-center justify-between pt-1">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -370,9 +555,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => setIsMatrixOpen(true)}
-                className="text-xs text-blue-600 hover:text-blue-800 font-semibold underline cursor-pointer flex items-center gap-1"
+                onClick={() => {
+                  setPin(['', '', '', '']);
+                  setPassword('');
+                  setPinStatus('idle');
+                  setErrorMessage(null);
+                  pinInputRefs[0].current?.focus();
+                }}
+                className="text-xs text-zinc-500 hover:text-zinc-900 font-medium underline cursor-pointer"
               >
+                Limpar PIN
               </button>
             </div>
 
@@ -381,7 +573,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               <button
                 id="btn-login-proceed-step-2"
                 type="submit"
-                className="w-full py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                disabled={pinStatus === 'verifying'}
+                className="w-full py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
               >
                 <span>Continuar para Terminal & Caixa</span>
                 <ArrowRight size={16} />

@@ -17,6 +17,8 @@ export { NotificationsCenter } from './NotificationsCenter';
 
 // Auth Submodules
 export { LoginModal, AuthView } from './auth/AuthView';
+export { PinVerificationModal, type PinVerificationProps } from './auth/PinVerificationModal';
+export { PinLoginPage, type PinLoginPageProps, default as PinLoginScreen } from './auth/PinLoginPage';
 export { RoleGuard } from './RoleGuard';
 
 // View Submodules & Modals

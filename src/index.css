@@ -114,4 +114,54 @@ button, input, optgroup, select, textarea {
   }
 }
 
+/* Keyframes for Upward Wave Animation in Baby Blue */
+@keyframes waveUpwardPropagation {
+  0% {
+    transform: translateY(105%);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.9;
+  }
+  75% {
+    transform: translateY(-5%);
+    opacity: 0.98;
+  }
+  100% {
+    transform: translateY(0%);
+    opacity: 1;
+  }
+}
+
+@keyframes waveCrestDrift {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes waveCrestDriftReverse {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.wave-upward-container {
+  animation: waveUpwardPropagation 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.wave-crest-1 {
+  animation: waveCrestDrift 3s linear infinite;
+}
+
+.wave-crest-2 {
+  animation: waveCrestDriftReverse 4s linear infinite;
+}
+
+
 
