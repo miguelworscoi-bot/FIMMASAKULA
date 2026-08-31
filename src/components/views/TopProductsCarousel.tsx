@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Trophy, Plus, Check, Flame, ChevronLeft, ChevronRight } from 'lucide-react';
 import { INITIAL_PRODUCTS } from '../../data/mockData';
@@ -35,17 +35,36 @@ const TOP_PRODUCTS = INITIAL_PRODUCTS.map((p) => {
 
 interface TopProductsCarouselProps {
   onAddToCart?: (productId: string) => void;
+  autoPlayInterval?: number;
 }
 
-export const TopProductsCarousel: React.FC<TopProductsCarouselProps> = ({ onAddToCart }) => {
+export const TopProductsCarousel: React.FC<TopProductsCarouselProps> = ({ 
+  onAddToCart,
+  autoPlayInterval = 3200 
+}) => {
   const [activeIndex, setActiveIndex] = useState(Math.min(2, TOP_PRODUCTS.length - 1));
   const [addedId, setAddedId] = useState<string | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const activeProduct = TOP_PRODUCTS[activeIndex];
 
   const handleNext = () => setActiveIndex((prev) => (prev + 1) % TOP_PRODUCTS.length);
   const handlePrev = () =>
     setActiveIndex((prev) => (prev - 1 + TOP_PRODUCTS.length) % TOP_PRODUCTS.length);
+
+  // Efeito de movimento automático contínuo e suave
+  useEffect(() => {
+    if (isPaused) return;
+
+    timerRef.current = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % TOP_PRODUCTS.length);
+    }, autoPlayInterval);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isPaused, autoPlayInterval]);
 
   const handleAddToCart = (productId: string) => {
     setAddedId(productId);
@@ -59,17 +78,21 @@ export const TopProductsCarousel: React.FC<TopProductsCarouselProps> = ({ onAddT
   );
 
   return (
-    <div className="w-full bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 border border-zinc-800 rounded-3xl p-6 shadow-sm relative overflow-hidden select-none">
-      <div className="absolute top-0 right-1/4 -mt-10 w-64 h-64 bg-[#E1FB15]/5 rounded-full blur-3xl pointer-events-none" />
+    <div 
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      className="w-full bg-white border border-gray-100/90 rounded-3xl p-6 shadow-xs relative overflow-hidden select-none"
+    >
+      <div className="absolute top-0 right-1/4 -mt-10 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* Cabeçalho do Carrossel */}
       <div className="flex items-center justify-between mb-4 z-10 relative gap-4">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 bg-[#E1FB15]/10 border border-[#E1FB15]/30 rounded-xl">
-            <Flame className="w-5 h-5 text-[#E1FB15]" />
+          <div className="p-2 bg-amber-50 border border-amber-200/60 rounded-xl">
+            <Flame className="w-5 h-5 text-amber-500" />
           </div>
           <div>
-            <h2 className="text-base font-black text-white tracking-tight">
+            <h2 className="text-base font-black text-zinc-950 tracking-tight">
               Top Produtos Mais Vendidos do Mês
             </h2>
             <p className="text-xs text-zinc-400">
@@ -83,7 +106,7 @@ export const TopProductsCarousel: React.FC<TopProductsCarouselProps> = ({ onAddT
             type="button"
             onClick={handlePrev}
             aria-label="Produto anterior"
-            className="w-9 h-9 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-white rounded-xl flex items-center justify-center transition cursor-pointer"
+            className="w-9 h-9 bg-zinc-50 hover:bg-zinc-100 border border-gray-200 text-zinc-700 hover:text-zinc-950 rounded-xl flex items-center justify-center transition cursor-pointer"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -91,7 +114,7 @@ export const TopProductsCarousel: React.FC<TopProductsCarouselProps> = ({ onAddT
             type="button"
             onClick={handleNext}
             aria-label="Próximo produto"
-            className="w-9 h-9 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-white rounded-xl flex items-center justify-center transition cursor-pointer"
+            className="w-9 h-9 bg-zinc-50 hover:bg-zinc-100 border border-gray-200 text-zinc-700 hover:text-zinc-950 rounded-xl flex items-center justify-center transition cursor-pointer"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -186,14 +209,14 @@ export const TopProductsCarousel: React.FC<TopProductsCarouselProps> = ({ onAddT
 
       {/* Rodapé com destaque do produto ativo */}
       {activeProduct && (
-        <div className="relative z-10 flex items-center justify-between border-t border-zinc-800 pt-4 mt-2">
-          <div className="flex items-center gap-2 text-xs text-zinc-400">
-            <span className="w-2 h-2 rounded-full bg-[#E1FB15]" />
-            <span className="font-semibold text-white line-clamp-1">{activeProduct.name}</span>
+        <div className="relative z-10 flex items-center justify-between border-t border-gray-100 pt-4 mt-2">
+          <div className="flex items-center gap-2 text-xs text-zinc-500">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="font-semibold text-zinc-900 line-clamp-1">{activeProduct.name}</span>
           </div>
           <div className="text-right shrink-0 pl-4">
-            <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Faturado no mês</p>
-            <p className="text-sm font-black text-[#E1FB15]">{formatKz(activeProduct.totalRevenue)}</p>
+            <p className="text-[10px] uppercase tracking-wider text-zinc-400 font-bold">Faturado no mês</p>
+            <p className="text-sm font-black text-zinc-950">{formatKz(activeProduct.totalRevenue)}</p>
           </div>
         </div>
       )}
