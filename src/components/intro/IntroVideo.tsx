@@ -23,8 +23,16 @@ export function IntroVideo({ onFinish }: IntroVideoProps) {
         muted
         playsInline
         onEnded={onFinish}
+        onError={onFinish}
         className="h-full w-full object-cover"
       />
+      <button
+        type="button"
+        onClick={onFinish}
+        className="absolute bottom-8 right-8 z-50 px-5 py-2.5 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md text-white text-xs font-semibold tracking-wide transition-all border border-white/30 cursor-pointer shadow-lg"
+      >
+        Pular Introdução →
+      </button>
     </div>
   );
 }
