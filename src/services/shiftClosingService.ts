@@ -9,6 +9,7 @@ export interface CloseShiftDTO {
 export interface ReportZPayload {
   shiftId: string;
   operatorId: string;
+  operatorName?: string;
   openedAt: string;
   closedAt: string;
   initialCash: number;
@@ -133,24 +134,63 @@ export const shiftClosingService = {
         throw updateErr;
       }
 
+      // Obter nome do operador para a mensagem / e-mail
+      let operatorName = "Operador";
+      try {
+        const { data: operator } = await supabase
+          .from("operators")
+          .select("name")
+          .eq("id", updatedShift.operator_id)
+          .single();
+
+        if (operator?.name) {
+          operatorName = operator.name;
+        }
+      } catch (opErr) {
+        console.warn("Não foi possível carregar o nome do operador:", opErr);
+      }
+
+      const reportPayload = {
+        shiftId: updatedShift.id,
+        operatorId: updatedShift.operator_id,
+        operatorName,
+        openedAt: updatedShift.opened_at,
+        closedAt: updatedShift.closed_at,
+        initialCash,
+        salesCash,
+        salesCard,
+        totalSales: salesCash + salesCard,
+        totalSangria,
+        totalReforco,
+        expectedCash,
+        actualCash: actualCashNum,
+        difference,
+      };
+
+      // Disparo assíncrono em background (não bloqueia a UI ou resposta da API)
+      if (typeof window === "undefined") {
+        import("../lib/reports/sendShiftReportZEmail")
+          .then(({ sendShiftReportZEmail }) => {
+            sendShiftReportZEmail(reportPayload).catch((err) =>
+              console.error("Erro em background no envio de e-mail:", err)
+            );
+          })
+          .catch((err) => console.error("Erro ao carregar módulo de envio de e-mail:", err));
+      } else {
+        // No navegador, despacha via rota API segura
+        fetch("/api/email/shift-report-z", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(reportPayload),
+        }).catch((err) =>
+          console.warn("Erro ao despachar Fecho Z por e-mail em background:", err)
+        );
+      }
+
       // 6. Retornar estrutura pronta para impressão do Relatório Z
       return {
         success: true,
-        reportZ: {
-          shiftId: updatedShift.id,
-          operatorId: updatedShift.operator_id,
-          openedAt: updatedShift.opened_at,
-          closedAt: updatedShift.closed_at,
-          initialCash,
-          salesCash,
-          salesCard,
-          totalSales: salesCash + salesCard,
-          totalSangria,
-          totalReforco,
-          expectedCash,
-          actualCash: actualCashNum,
-          difference,
-        }
+        reportZ: reportPayload,
       };
     } catch (error: any) {
       console.error("Erro no encerramento de turno:", error);
