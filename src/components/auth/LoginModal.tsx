@@ -434,51 +434,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                           animate={
                             pinStatus === 'error'
                               ? { x: [-6, 6, -4, 4, 0] }
-                              : { scale: digit ? 1.04 : 1 }
+                              : { scale: digit ? 1.02 : 1 }
                           }
-                          transition={{ duration: 0.25 }}
-                          className={`relative w-12 sm:w-14 h-14 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-300 overflow-hidden shadow-sm ${
+                          transition={{ duration: 0.2 }}
+                          className={`relative w-12 sm:w-14 h-14 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-200 overflow-hidden shadow-xs ${
                             digit
-                              ? 'border-2 border-sky-400 shadow-lg shadow-sky-400/25 ring-2 ring-sky-300/40'
+                              ? 'bg-zinc-150 bg-zinc-200/70 border-2 border-zinc-400 text-zinc-950'
                               : 'bg-zinc-50 border-2 border-zinc-200 text-zinc-900 hover:border-zinc-300'
                           }`}
                         >
-                          {/* Animação de Onda Subindo em Azul Bebé */}
-                          <AnimatePresence>
-                            {digit && (
-                              <motion.div
-                                initial={{ y: '100%', opacity: 0 }}
-                                animate={{ y: '0%', opacity: 1 }}
-                                exit={{ y: '100%', opacity: 0 }}
-                                transition={{ type: 'spring', stiffness: 240, damping: 22 }}
-                                className="absolute inset-0 z-0 bg-gradient-to-t from-sky-400 via-sky-300 to-sky-200 pointer-events-none"
-                              >
-                                {/* Cristas de onda animadas no topo */}
-                                <motion.svg
-                                  className="absolute -top-3 left-0 w-[200%] h-4 text-sky-200 fill-current opacity-85 pointer-events-none"
-                                  viewBox="0 0 100 20"
-                                  preserveAspectRatio="none"
-                                  animate={{ x: ['0%', '-50%'] }}
-                                  transition={{ repeat: Infinity, ease: 'linear', duration: 2.2 }}
-                                >
-                                  <path d="M0 10 Q 12.5 0, 25 10 T 50 10 T 75 10 T 100 10 V 20 H 0 Z" />
-                                </motion.svg>
-                                <motion.svg
-                                  className="absolute -top-2 left-0 w-[200%] h-3 text-sky-100/70 fill-current pointer-events-none"
-                                  viewBox="0 0 100 20"
-                                  preserveAspectRatio="none"
-                                  animate={{ x: ['-50%', '0%'] }}
-                                  transition={{ repeat: Infinity, ease: 'linear', duration: 3 }}
-                                >
-                                  <path d="M0 10 Q 12.5 20, 25 10 T 50 10 T 75 10 T 100 10 V 20 H 0 Z" />
-                                </motion.svg>
-
-                                {/* Brilho suave superior */}
-                                <div className="absolute inset-0 bg-gradient-to-b from-white/35 via-transparent to-black/5 pointer-events-none" />
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-
                           <input
                             id={index === 0 ? "login-input-password" : `login-input-pin-${index}`}
                             ref={pinInputRefs[index]}
@@ -490,9 +454,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                             onKeyDown={(e) => handlePinKeyDown(index, e)}
                             onPaste={handlePinPaste}
                             disabled={pinStatus === 'verifying'}
-                            className={`w-full h-full text-center text-2xl font-black bg-transparent outline-none cursor-pointer relative z-10 transition-colors ${
-                              digit ? 'text-slate-950 font-black' : 'text-zinc-900'
-                            }`}
+                            className="w-full h-full text-center text-2xl font-black bg-transparent outline-none cursor-pointer relative z-10 transition-colors text-zinc-950"
                           />
                         </motion.div>
                       ))}

@@ -26,3 +26,21 @@ export interface ShiftRecord {
   difference: number | null; // Quebra (negativo) ou Sobra (positivo)
   movements: CashMovement[];
 }
+
+export interface OperatorPerformance {
+  operatorId: string;
+  operatorName: string;
+  totalShifts: number;
+  totalSalesCash: number;
+  totalSalesCard: number;
+  totalSales: number;
+  totalBreakage: number; // Valor acumulado de quebras (negativo)
+  totalSurplus: number;  // Valor acumulado de sobras (positivo)
+  netDifference: number; // Diferença líquida
+  accuracyRate: number;  // Taxa de precisão (%)
+}
+
+export interface BreakageTrendPoint {
+  date: string;
+  [operatorName: string]: number | string; // Dinâmico por operador para gráfico multilinhas
+}

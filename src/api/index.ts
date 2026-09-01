@@ -30,3 +30,8 @@ export {
   expressCashMovementHandler,
 } from './cashMovements';
 
+export {
+  POST as closeShiftRoute,
+  expressCloseShiftHandler,
+} from './shiftClose';
+
