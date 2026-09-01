@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { BoxIcon, BoxesIcon, DeleteIcon, CogIcon } from "@/components/icons";
-import { Plus } from "lucide-react";
+import { Plus, AlertTriangle, AlertOctagon, X, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProductFormModal, ProductFormData } from "@/components/ProductFormModal";
 
@@ -49,11 +49,65 @@ const MOCK_PRODUCTS = [
   },
 ];
 
+export interface PageToast {
+  id: string;
+  type: 'critical_stock' | 'out_of_stock' | 'success';
+  title: string;
+  message: string;
+  productName?: string;
+  currentStock?: number;
+  minStock?: number;
+  actionLabel?: string;
+  onAction?: () => void;
+}
+
 export default function ProductsPage() {
   const [productsList, setProductsList] = useState(MOCK_PRODUCTS);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterLowStock, setFilterLowStock] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [toasts, setToasts] = useState<PageToast[]>([]);
+
+  const initialAlertRef = useRef(false);
+
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
+
+  const showCriticalStockToast = (name: string, stock: number, minStock: number) => {
+    const isOut = stock <= 0;
+    const id = `toast-${Date.now()}`;
+    const newToast: PageToast = {
+      id,
+      type: isOut ? 'out_of_stock' : 'critical_stock',
+      title: isOut ? '🚨 Estoque Esgotado' : '⚠️ Nível Crítico de Estoque',
+      message: isOut
+        ? `O produto "${name}" está sem estoque (0 unid).`
+        : `O produto "${name}" atingiu o nível crítico (${stock} de mín. ${minStock} unid).`,
+      productName: name,
+      currentStock: stock,
+      minStock: minStock,
+      actionLabel: 'Ver Estoque Baixo',
+      onAction: () => {
+        setFilterLowStock(true);
+        removeToast(id);
+      }
+    };
+    setToasts(prev => [...prev, newToast]);
+    setTimeout(() => removeToast(id), 6000);
+  };
+
+  useEffect(() => {
+    if (!initialAlertRef.current && productsList.length > 0) {
+      initialAlertRef.current = true;
+      const critical = productsList.filter(p => p.current_stock <= p.min_stock);
+      if (critical.length > 0) {
+        critical.forEach(p => {
+          showCriticalStockToast(p.name, p.current_stock, p.min_stock);
+        });
+      }
+    }
+  }, [productsList]);
 
   const filteredProducts = productsList.filter((product) => {
     const matchesSearch =
@@ -78,11 +132,65 @@ export default function ProductsPage() {
       is_active: true,
     };
     setProductsList([newProduct, ...productsList]);
+    if (newProduct.current_stock <= newProduct.min_stock) {
+      showCriticalStockToast(newProduct.name, newProduct.current_stock, newProduct.min_stock);
+    }
     setIsModalOpen(false);
   };
 
   return (
-    <div className="flex flex-col gap-6 p-6 bg-[#131313] text-white min-h-screen">
+    <div className="flex flex-col gap-6 p-6 bg-[#131313] text-white min-h-screen relative">
+      {/* Visual Toast Notification Stack */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
+        {toasts.map(toast => (
+          <div
+            key={toast.id}
+            className={`pointer-events-auto rounded-2xl p-4 shadow-2xl border transition-all animate-in fade-in slide-in-from-bottom-4 flex flex-col gap-2 ${
+              toast.type === 'out_of_stock'
+                ? 'bg-neutral-900 text-white border-rose-500/50'
+                : 'bg-neutral-900 text-white border-amber-500/50'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className={`p-2 rounded-xl shrink-0 mt-0.5 ${
+                  toast.type === 'out_of_stock' ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400 animate-pulse'
+                }`}>
+                  {toast.type === 'out_of_stock' ? <AlertOctagon size={18} /> : <AlertTriangle size={18} />}
+                </div>
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-xs">{toast.title}</span>
+                    <span className="px-1.5 py-0.2 rounded bg-amber-400 text-black text-[9px] font-black uppercase">
+                      Crítico
+                    </span>
+                  </div>
+                  <p className="text-xs text-neutral-300">{toast.message}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => removeToast(toast.id)}
+                className="p-1 rounded text-neutral-400 hover:text-white cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            {toast.onAction && (
+              <div className="flex justify-end pt-1 border-t border-neutral-800">
+                <button
+                  type="button"
+                  onClick={toast.onAction}
+                  className="px-3 py-1 bg-[#E1FB15] text-black rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <span>{toast.actionLabel}</span>
+                  <ArrowRight size={12} />
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
       {/* Cabeçalho do Módulo */}
       <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
         <div className="flex items-center gap-3">

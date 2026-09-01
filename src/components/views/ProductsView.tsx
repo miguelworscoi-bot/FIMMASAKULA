@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Plus, 
   Search, 
@@ -27,7 +27,10 @@ import {
   Lock,
   Eye,
   ShieldCheck,
-  Printer
+  Printer,
+  AlertOctagon,
+  ArrowRight,
+  PackageCheck
 } from 'lucide-react';
 import { Product, ProductStatus } from '../../types';
 import { formatKz } from '../../utils/formatters';
@@ -41,6 +44,19 @@ import { ProductFormModal, ProductFormData } from '../ProductFormModal';
 interface ProductsViewProps {
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
+}
+
+export interface StockToast {
+  id: string;
+  type: 'critical_stock' | 'out_of_stock' | 'success' | 'warning' | 'info';
+  title: string;
+  message: string;
+  productName?: string;
+  currentStock?: number;
+  minStock?: number;
+  unit?: string;
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
 export const ProductsView: React.FC<ProductsViewProps> = ({
@@ -58,16 +74,134 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   const [modalMode, setModalMode] = useState<'create' | 'edit' | 'stock_entry'>('stock_entry');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [printingLabelProduct, setPrintingLabelProduct] = useState<Product | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [activeToasts, setActiveToasts] = useState<StockToast[]>([]);
   const [isMatrixOpen, setIsMatrixOpen] = useState(false);
   const [restrictedActionAlert, setRestrictedActionAlert] = useState<string | null>(null);
 
+  // Ref to track products that already triggered critical stock alert to avoid duplicate spam
+  const initialAlertTriggeredRef = useRef(false);
+  const lastKnownStockMapRef = useRef<Map<string, number>>(new Map());
+
   const categories = ['all', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+  const removeToast = (id: string) => {
+    setActiveToasts(prev => prev.filter(t => t.id !== id));
   };
+
+  const showToast = (
+    message: string, 
+    type: 'success' | 'info' | 'warning' = 'success',
+    title?: string
+  ) => {
+    const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+    const newToast: StockToast = {
+      id,
+      type,
+      title: title || (type === 'success' ? 'Operação Concluída' : 'Aviso'),
+      message,
+    };
+    setActiveToasts(prev => [...prev, newToast]);
+    setTimeout(() => {
+      removeToast(id);
+    }, 4500);
+  };
+
+  const showCriticalStockToast = (
+    productName: string,
+    stock: number,
+    minStock: number,
+    unit: string = 'un',
+    targetProduct?: Product
+  ) => {
+    const isOut = stock <= 0;
+    const id = `critical-toast-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+    const newToast: StockToast = {
+      id,
+      type: isOut ? 'out_of_stock' : 'critical_stock',
+      title: isOut ? '🚨 Estoque Esgotado' : '⚠️ Nível Crítico de Estoque',
+      message: isOut
+        ? `O artigo "${productName}" esgotou completamente (0 ${unit}).`
+        : `O artigo "${productName}" atingiu o nível crítico definido (${stock} de mín. ${minStock} ${unit}).`,
+      productName,
+      currentStock: stock,
+      minStock,
+      unit,
+      actionLabel: isManager ? 'Repor Estoque' : 'Ver na Tabela',
+      onAction: () => {
+        if (isManager && targetProduct) {
+          handleOpenModal('stock_entry', targetProduct);
+        } else {
+          setActiveQuickFilter('lowStock');
+          setSearchTerm(productName);
+        }
+        removeToast(id);
+      }
+    };
+
+    setActiveToasts(prev => {
+      // Avoid duplicate toasts for the exact same product
+      const filtered = prev.filter(t => t.productName !== productName);
+      return [...filtered, newToast];
+    });
+
+    // Auto dismiss after 7 seconds
+    setTimeout(() => {
+      removeToast(id);
+    }, 7000);
+  };
+
+  // Monitor stock levels and trigger critical stock toast when an item reaches or is at critical level
+  useEffect(() => {
+    if (!products || products.length === 0) return;
+
+    const criticalProducts = products.filter(p => p.stock <= p.minStock);
+
+    // Initial check when component loads with critical items
+    if (!initialAlertTriggeredRef.current) {
+      initialAlertTriggeredRef.current = true;
+      // Populate baseline stock map
+      products.forEach(p => lastKnownStockMapRef.current.set(p.id, p.stock));
+
+      if (criticalProducts.length > 0) {
+        if (criticalProducts.length === 1) {
+          const single = criticalProducts[0];
+          showCriticalStockToast(single.name, single.stock, single.minStock, single.unit || 'un', single);
+        } else {
+          // Summary notification for multiple critical items
+          const id = `critical-summary-${Date.now()}`;
+          const summaryToast: StockToast = {
+            id,
+            type: 'critical_stock',
+            title: '⚠️ Alerta de Estoque Crítico',
+            message: `Existem ${criticalProducts.length} artigos que atingiram ou estão abaixo da quantidade mínima!`,
+            actionLabel: 'Ver Artigos Críticos',
+            onAction: () => {
+              setActiveQuickFilter('lowStock');
+              removeToast(id);
+            }
+          };
+          setActiveToasts(prev => [...prev, summaryToast]);
+          setTimeout(() => removeToast(id), 7000);
+        }
+      }
+      return;
+    }
+
+    // Subsequent updates: check if any item dropped/reached critical stock level
+    products.forEach(p => {
+      const prevStock = lastKnownStockMapRef.current.get(p.id);
+      const isNowCritical = p.stock <= p.minStock;
+      const wasPreviouslyHigher = prevStock !== undefined && prevStock > p.minStock;
+
+      // Product just reached critical level
+      if (isNowCritical && (wasPreviouslyHigher || prevStock === undefined)) {
+        showCriticalStockToast(p.name, p.stock, p.minStock, p.unit || 'un', p);
+      }
+
+      // Update ref
+      lastKnownStockMapRef.current.set(p.id, p.stock);
+    });
+  }, [products]);
 
   // Helper: Days until expiration
   const getDaysToExpiry = (expiryDateStr?: string): number | null => {
@@ -173,6 +307,11 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       return;
     }
 
+    const currentStock = productPayload.stock !== undefined ? productPayload.stock : editingProduct?.stock || 0;
+    const currentMinStock = productPayload.minStock !== undefined ? productPayload.minStock : editingProduct?.minStock || 5;
+    const productName = productPayload.name || editingProduct?.name || 'Artigo';
+    const unit = productPayload.unit || editingProduct?.unit || 'un';
+
     if (isEditing && editingProduct) {
       const updated: Product = {
         ...editingProduct,
@@ -180,7 +319,14 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       } as Product;
 
       setProducts(prev => prev.map(p => p.id === editingProduct.id ? updated : p));
-      showToast(`Entrada/Artigo "${productPayload.name}" atualizado com sucesso.`);
+      
+      // If the updated item has reached critical stock level, trigger critical toast
+      if (currentStock <= currentMinStock) {
+        showCriticalStockToast(productName, currentStock, currentMinStock, unit, updated);
+      } else {
+        showToast(`Artigo "${productPayload.name}" atualizado com sucesso.`);
+      }
+      
       supabaseService.insertProduct(updated).catch(err => console.warn('Supabase sync:', err));
     } else {
       const newProd: Product = {
@@ -204,7 +350,14 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       };
 
       setProducts(prev => [newProd, ...prev]);
-      showToast(`Nova entrada de estoque registrada para "${newProd.name}".`);
+      
+      // If newly registered item is already at or below critical stock, alert user
+      if (newProd.stock <= newProd.minStock) {
+        showCriticalStockToast(newProd.name, newProd.stock, newProd.minStock, newProd.unit, newProd);
+      } else {
+        showToast(`Nova entrada de estoque registrada para "${newProd.name}".`);
+      }
+      
       supabaseService.insertProduct(newProd).catch(err => console.warn('Supabase sync:', err));
     }
   };
@@ -230,14 +383,116 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   const hasActiveFilters = searchTerm !== '' || selectedCategory !== 'all' || activeQuickFilter !== 'all';
 
   return (
-    <div id="view-products" className="space-y-6 animate-in fade-in duration-200">
-      {/* Toast Feedback */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-zinc-950 text-white px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-semibold animate-in fade-in slide-in-from-bottom-3">
-          <Check size={16} className="text-emerald-400" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
+    <div id="view-products" className="space-y-6 animate-in fade-in duration-200 relative">
+      {/* Visual Toast Notification Stack (Fixed at Bottom Right) */}
+      <div 
+        id="products-toast-container" 
+        className="fixed bottom-6 right-6 z-50 flex flex-col gap-2.5 max-w-sm sm:max-w-md w-full pointer-events-none px-4 sm:px-0"
+      >
+        {activeToasts.map((toast) => {
+          const isCritical = toast.type === 'critical_stock' || toast.type === 'out_of_stock';
+          const isWarning = toast.type === 'warning';
+          const isSuccess = toast.type === 'success';
+
+          return (
+            <div
+              key={toast.id}
+              id={`toast-${toast.id}`}
+              className={`pointer-events-auto rounded-3xl p-4 shadow-2xl border transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 flex flex-col gap-2.5 ${
+                toast.type === 'out_of_stock'
+                  ? 'bg-zinc-950/95 text-white border-rose-500/50 backdrop-blur-md shadow-rose-950/30'
+                  : isCritical
+                  ? 'bg-zinc-950/95 text-white border-amber-500/50 backdrop-blur-md shadow-amber-950/30'
+                  : isWarning
+                  ? 'bg-zinc-950/95 text-white border-amber-400/40 backdrop-blur-md'
+                  : 'bg-zinc-950/95 text-white border-zinc-800 backdrop-blur-md'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className={`p-2 rounded-2xl shrink-0 mt-0.5 ${
+                    toast.type === 'out_of_stock'
+                      ? 'bg-rose-500/20 text-rose-400 ring-1 ring-rose-500/30'
+                      : isCritical
+                      ? 'bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/30 animate-pulse'
+                      : isSuccess
+                      ? 'bg-emerald-500/20 text-emerald-400'
+                      : 'bg-zinc-800 text-zinc-300'
+                  }`}>
+                    {toast.type === 'out_of_stock' ? (
+                      <AlertOctagon size={18} />
+                    ) : isCritical ? (
+                      <AlertTriangle size={18} />
+                    ) : isSuccess ? (
+                      <Check size={18} />
+                    ) : (
+                      <Boxes size={18} />
+                    )}
+                  </div>
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-xs text-white">
+                        {toast.title}
+                      </span>
+                      {isCritical && (
+                        <span className={`px-2 py-0.2 rounded-md text-[10px] font-black uppercase tracking-wider ${
+                          toast.type === 'out_of_stock'
+                            ? 'bg-rose-500 text-white'
+                            : 'bg-amber-400 text-black'
+                        }`}>
+                          {toast.type === 'out_of_stock' ? 'Zero Estoque' : 'Crítico'}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-zinc-300 leading-relaxed">
+                      {toast.message}
+                    </p>
+                    {toast.currentStock !== undefined && toast.minStock !== undefined && (
+                      <div className="flex items-center gap-2 pt-1">
+                        <span className="text-[11px] font-mono font-semibold bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-lg text-amber-300">
+                          Estoque Atual: {toast.currentStock} {toast.unit}
+                        </span>
+                        <span className="text-[11px] font-mono text-zinc-400">
+                          Mínimo: {toast.minStock} {toast.unit}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => removeToast(toast.id)}
+                  className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
+                  title="Fechar Notificação"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              {/* Botão de Ação Opcional no Toast */}
+              {toast.onAction && toast.actionLabel && (
+                <div className="flex items-center justify-end gap-2 pt-1 border-t border-zinc-800/80">
+                  <button
+                    type="button"
+                    onClick={toast.onAction}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                      toast.type === 'out_of_stock'
+                        ? 'bg-rose-500 hover:bg-rose-400 text-white'
+                        : isCritical
+                        ? 'bg-[#E1FB15] hover:bg-[#d6f00f] text-black shadow-xs'
+                        : 'bg-zinc-800 hover:bg-zinc-700 text-white'
+                    }`}
+                  >
+                    <span>{toast.actionLabel}</span>
+                    <ArrowRight size={12} />
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
       {/* 1. CABEÇALHO COM AÇÕES */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-gray-100 shadow-xs">
