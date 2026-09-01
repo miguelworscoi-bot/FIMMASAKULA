@@ -400,24 +400,24 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
               id={`toast-${toast.id}`}
               className={`pointer-events-auto rounded-3xl p-4 shadow-2xl border transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 flex flex-col gap-2.5 ${
                 toast.type === 'out_of_stock'
-                  ? 'bg-zinc-950/95 text-white border-rose-500/50 backdrop-blur-md shadow-rose-950/30'
+                  ? 'bg-white text-zinc-900 border-rose-200 shadow-rose-900/10'
                   : isCritical
-                  ? 'bg-zinc-950/95 text-white border-amber-500/50 backdrop-blur-md shadow-amber-950/30'
+                  ? 'bg-white text-zinc-900 border-amber-200 shadow-amber-900/10'
                   : isWarning
-                  ? 'bg-zinc-950/95 text-white border-amber-400/40 backdrop-blur-md'
-                  : 'bg-zinc-950/95 text-white border-zinc-800 backdrop-blur-md'
+                  ? 'bg-white text-zinc-900 border-amber-200'
+                  : 'bg-white text-zinc-900 border-zinc-200'
               }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
                   <div className={`p-2 rounded-2xl shrink-0 mt-0.5 ${
                     toast.type === 'out_of_stock'
-                      ? 'bg-rose-500/20 text-rose-400 ring-1 ring-rose-500/30'
+                      ? 'bg-rose-50 text-rose-600 ring-1 ring-rose-200'
                       : isCritical
-                      ? 'bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/30 animate-pulse'
+                      ? 'bg-amber-50 text-amber-600 ring-1 ring-amber-200 animate-pulse'
                       : isSuccess
-                      ? 'bg-emerald-500/20 text-emerald-400'
-                      : 'bg-zinc-800 text-zinc-300'
+                      ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200'
+                      : 'bg-zinc-100 text-zinc-700'
                   }`}>
                     {toast.type === 'out_of_stock' ? (
                       <AlertOctagon size={18} />
@@ -431,28 +431,28 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   </div>
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-xs text-white">
+                      <span className="font-bold text-xs text-zinc-900">
                         {toast.title}
                       </span>
                       {isCritical && (
-                        <span className={`px-2 py-0.2 rounded-md text-[10px] font-black uppercase tracking-wider ${
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${
                           toast.type === 'out_of_stock'
                             ? 'bg-rose-500 text-white'
-                            : 'bg-amber-400 text-black'
+                            : 'bg-amber-400 text-zinc-950'
                         }`}>
                           {toast.type === 'out_of_stock' ? 'Zero Estoque' : 'Crítico'}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-zinc-300 leading-relaxed">
+                    <p className="text-xs text-zinc-600 leading-relaxed">
                       {toast.message}
                     </p>
                     {toast.currentStock !== undefined && toast.minStock !== undefined && (
                       <div className="flex items-center gap-2 pt-1">
-                        <span className="text-[11px] font-mono font-semibold bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-lg text-amber-300">
+                        <span className="text-[11px] font-mono font-semibold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg text-amber-800">
                           Estoque Atual: {toast.currentStock} {toast.unit}
                         </span>
-                        <span className="text-[11px] font-mono text-zinc-400">
+                        <span className="text-[11px] font-mono text-zinc-500">
                           Mínimo: {toast.minStock} {toast.unit}
                         </span>
                       </div>
@@ -463,7 +463,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                 <button
                   type="button"
                   onClick={() => removeToast(toast.id)}
-                  className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
+                  className="p-1 rounded-lg text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 transition-colors cursor-pointer shrink-0"
                   title="Fechar Notificação"
                 >
                   <X size={14} />
@@ -472,16 +472,16 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
 
               {/* Botão de Ação Opcional no Toast */}
               {toast.onAction && toast.actionLabel && (
-                <div className="flex items-center justify-end gap-2 pt-1 border-t border-zinc-800/80">
+                <div className="flex items-center justify-end gap-2 pt-1 border-t border-zinc-100">
                   <button
                     type="button"
                     onClick={toast.onAction}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                       toast.type === 'out_of_stock'
-                        ? 'bg-rose-500 hover:bg-rose-400 text-white'
+                        ? 'bg-rose-600 hover:bg-rose-500 text-white'
                         : isCritical
-                        ? 'bg-[#E1FB15] hover:bg-[#d6f00f] text-black shadow-xs'
-                        : 'bg-zinc-800 hover:bg-zinc-700 text-white'
+                        ? 'bg-zinc-900 hover:bg-zinc-800 text-white shadow-xs'
+                        : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900'
                     }`}
                   >
                     <span>{toast.actionLabel}</span>

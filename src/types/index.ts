@@ -216,3 +216,11 @@ export type {
 
 // Offline Sales & Sync Queue Types
 export type { OfflineSale } from '../services/offlineStorage';
+
+// Cash Register Shift & Movement Domain Types
+export type {
+  MovementType as CashShiftMovementType,
+  CashMovement as CashShiftMovement,
+  ShiftRecord
+} from './cash';
+export * from './cash';

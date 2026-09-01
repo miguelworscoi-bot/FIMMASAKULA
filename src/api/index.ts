@@ -24,3 +24,9 @@ export {
   expressUploadHandler,
   type ProductImageUploadResult,
 } from './upload/product-image';
+
+export {
+  POST as registerCashMovementRoute,
+  expressCashMovementHandler,
+} from './cashMovements';
+

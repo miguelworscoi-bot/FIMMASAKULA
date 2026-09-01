@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { triggerCashDrawer as triggerCashDrawerWeb } from "../lib/printerService";
 
 export interface ReceiptItem {
   name: string;
@@ -73,7 +74,8 @@ export const HardwareService = {
     if (typeof window !== "undefined" && ("__TAURI_INTERNALS__" in (window as unknown as Record<string, unknown>) || "__TAURI__" in (window as unknown as Record<string, unknown>))) {
       await invoke("open_cash_drawer", { portName, baudRate });
     } else {
-      console.warn("Ambiente Web: Abertura direta de gaveta requer runtime Desktop.");
+      console.info("Ambiente Web: Acionando gaveta via WebUSB...");
+      await triggerCashDrawerWeb();
     }
   },
 

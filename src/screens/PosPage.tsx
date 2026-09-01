@@ -12,12 +12,29 @@ import {
   CheckCircle2,
   Sparkles
 } from "lucide-react";
+import { ReceiptModal } from "../components/ReceiptModal";
+import { ReceiptData } from "@/lib/printerService";
+import { usePosShortcuts } from "@/hooks/usePosShortcuts";
 
 export function PosPage() {
   const { products, topProducts, loading } = useProducts();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("Todas");
   const [cart, setCart] = useState<{ product: Product; quantity: number }[]>([]);
+  const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
+  const [drawerAlert, setDrawerAlert] = useState<string | null>(null);
+
+  // Atalho F9 para acionar abertura da Gaveta
+  const { handleOpenDrawer } = usePosShortcuts({
+    onOpenDrawerSuccess: () => {
+      setDrawerAlert("Gaveta aberta com sucesso! (F9)");
+      setTimeout(() => setDrawerAlert(null), 3000);
+    },
+    onOpenDrawerError: () => {
+      setDrawerAlert("Comando de gaveta enviado.");
+      setTimeout(() => setDrawerAlert(null), 3000);
+    },
+  });
 
   // Categorias únicas extraídas dos produtos reais
   const categories = useMemo(() => {
@@ -270,16 +287,58 @@ export function PosPage() {
             </span>
           </div>
 
-          <button
-            type="button"
-            disabled={cart.length === 0}
-            onClick={() => alert(`Total a liquidar: Kz ${totalAmount.toLocaleString("pt-AO")}`)}
-            className="w-full bg-[#E1FB15] hover:bg-[#d4eb0f] disabled:opacity-40 text-black font-extrabold py-3.5 rounded-2xl transition shadow-lg shadow-[#E1FB15]/10 cursor-pointer disabled:cursor-not-allowed"
-          >
-            Finalizar Pagamento (F12)
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleOpenDrawer}
+              className="px-3 py-3.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-neutral-300 hover:text-white rounded-2xl font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+              title="Abrir Gaveta de Dinheiro (F9)"
+            >
+              <span>Gaveta (F9)</span>
+            </button>
+            <button
+              type="button"
+              disabled={cart.length === 0}
+              onClick={() => {
+                const currentReceipt: ReceiptData = {
+                  companyName: "MASAKULA COMÉRCIO & SERVIÇOS",
+                  nif: "5417082910",
+                  saleId: `VENDA-${Date.now()}`,
+                  operatorName: "Operador Principal",
+                  items: cart.map(item => ({
+                    name: item.product.name,
+                    qty: item.quantity,
+                    price: item.product.price || 0,
+                  })),
+                  total: totalAmount,
+                  paymentMethod: "Numerário / TPA",
+                };
+                setReceiptData(currentReceipt);
+                setCart([]);
+              }}
+              className="flex-1 bg-[#E1FB15] hover:bg-[#d4eb0f] disabled:opacity-40 text-black font-extrabold py-3.5 rounded-2xl transition shadow-lg shadow-[#E1FB15]/10 cursor-pointer disabled:cursor-not-allowed text-center"
+            >
+              Finalizar Pagamento (F12)
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* AVISO TOAST GAVETA F9 */}
+      {drawerAlert && (
+        <div className="fixed bottom-6 left-6 z-50 bg-neutral-900 border border-[#E1FB15]/50 text-white px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-bottom-3">
+          <span className="text-[#E1FB15]">⚡</span>
+          <span>{drawerAlert}</span>
+        </div>
+      )}
+
+      {/* MODAL DE IMPRESSÃO DO RECIBO */}
+      {receiptData && (
+        <ReceiptModal
+          data={receiptData}
+          onClose={() => setReceiptData(null)}
+        />
+      )}
 
     </div>
   );

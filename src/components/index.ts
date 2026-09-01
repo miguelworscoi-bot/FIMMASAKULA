@@ -31,6 +31,7 @@ export { ThermalReceipt } from './ThermalReceipt';
 export { CustomersView } from './views/CustomersView';
 export { ReportsView } from './views/ReportsView';
 export { default as ReportsScreen } from './ReportsScreen';
+export { default as ReceiptModal, type ReceiptModalProps } from './ReceiptModal';
 export { default as VoidSaleModal } from './VoidSaleModal';
 export { default as SaleFeedbackModal } from './SaleFeedbackModal';
 export { default as ReportZModal, type ReportZData } from './ReportZModal';
