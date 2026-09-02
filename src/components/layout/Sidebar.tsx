@@ -11,7 +11,6 @@ import {
   Settings, 
   LogOut, 
   Sparkles, 
-  ShieldCheck, 
   BrainCircuit,
   Target,
   Clock
@@ -82,12 +81,6 @@ export const MAIN_NAV_ITEMS: SidebarNavOption[] = [
     label: 'Relatórios',
     tooltip: 'Relatórios & Mapas Fiscais AGT',
     icon: BarChart3,
-  },
-  {
-    id: 'audit',
-    label: 'Auditoria & Quebras',
-    tooltip: 'Desempenho de Caixa, Quebras & Motivos de Auditoria',
-    icon: ShieldCheck,
   },
   {
     id: 'ai_engine',

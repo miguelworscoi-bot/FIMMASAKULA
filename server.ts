@@ -13,6 +13,7 @@ import {
   expressCloseShiftHandler,
   expressSendAuditEmailHandler,
   expressSendShiftReportZEmailHandler,
+  productExpressHandlers,
 } from "./src/api";
 
 async function startServer() {
@@ -33,6 +34,8 @@ async function startServer() {
   });
 
   app.get("/api/saft", expressSaftHandler);
+  app.get("/api/products", productExpressHandlers.getProducts);
+  app.post("/api/products", productExpressHandlers.createProduct);
   app.post("/api/onboarding", expressOnboardingHandler);
   app.post("/api/upload/product-image", expressUploadHandler);
   app.post("/api/cash-movements", expressCashMovementHandler);

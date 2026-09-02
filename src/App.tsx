@@ -4,6 +4,7 @@ import { AppFlowState, UserSession } from './types';
 import { LoginModal } from './components/auth/LoginModal';
 import { AppShell } from './components/layout/AppShell';
 import { IntroVideo } from './components/intro/IntroVideo';
+import { Toaster } from 'sonner';
 
 export function MasakulaSystem() {
   // Navigation State Machine
@@ -91,6 +92,21 @@ export function MasakulaSystem() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Configuração do Toaster com posição no canto superior direito */}
+      <Toaster
+        position="top-right"
+        theme="dark"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: "transparent",
+            border: "none",
+            boxShadow: "none",
+            padding: 0,
+          },
+        }}
+      />
     </div>
   );
 }

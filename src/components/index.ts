@@ -47,6 +47,9 @@ export { usePermissions, type UserRole as PermissionsUserRole, type UserProfile 
 export { BreakageSummaryCharts } from './BreakageSummaryCharts';
 export { CategoryFolderCard, type CategoryFolderProps, type ProductItem } from './CategoryFolderCard';
 export { CategoriesSubscreenPage } from './CategoriesSubscreenPage';
+export { CategoryFormModal, type CategoryFormData } from './CategoryFormModal';
+export { DeleteCategoryModal, type DeleteCategoryModalProps } from './DeleteCategoryModal';
+export { ProductCategorySelect, type ProductCategorySelectProps } from './ProductCategorySelect';
 export { SettingsView } from './views/SettingsView';
 export { DashboardView } from './views/DashboardView';
 

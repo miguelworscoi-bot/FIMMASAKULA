@@ -6,3 +6,4 @@ export { default as ProductsPage } from './ProductsPage';
 export { default as PosTerminalPage } from './PosTerminalPage';
 export { default as ShiftHistoryPage } from './ShiftHistoryPage';
 export { default as SaaSCommercialPage } from './SaaSCommercialPage';
+export { default as CategoriesPage } from './CategoriesPage';

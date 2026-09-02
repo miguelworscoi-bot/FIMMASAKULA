@@ -825,6 +825,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
 
       {productSubTab === 'categories' ? (
         <CategoriesSubscreenPage 
+          inventoryProducts={products}
           onSelectCategoryFilter={(catName) => {
             setSelectedCategory(catName);
             setProductSubTab('inventory');

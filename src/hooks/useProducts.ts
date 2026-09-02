@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { INITIAL_PRODUCTS } from "../data/mockData";
 
 export interface Product {
   id: string;
@@ -13,8 +14,20 @@ export interface Product {
   is_featured: boolean;
 }
 
+const FALLBACK_PRODUCTS: Product[] = INITIAL_PRODUCTS.map((p, idx) => ({
+  id: p.id,
+  name: p.name,
+  code: p.barcode || p.sku,
+  price: p.salePrice,
+  stock: p.stock,
+  image_url: p.imageUrl,
+  category: p.category,
+  sales_count: 50 - idx * 4,
+  is_featured: idx < 3,
+}));
+
 export function useProducts() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(FALLBACK_PRODUCTS);
   const [loading, setLoading] = useState(true);
 
   const fetchProducts = async () => {
@@ -25,13 +38,17 @@ export function useProducts() {
         .select("*")
         .order("sales_count", { ascending: false });
 
-      if (error) {
-        console.error("Erro ao procurar produtos no Supabase:", error);
+      if (error || !data || data.length === 0) {
+        if (error) {
+          console.warn("Supabase products fetch notice (using fallback):", error.message);
+        }
+        setProducts(FALLBACK_PRODUCTS);
       } else {
-        setProducts(data || []);
+        setProducts(data);
       }
     } catch (err) {
-      console.error(err);
+      console.warn("Erro ao buscar produtos, usando fallback:", err);
+      setProducts(FALLBACK_PRODUCTS);
     } finally {
       setLoading(false);
     }

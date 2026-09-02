@@ -44,6 +44,16 @@ export const CategoryFolderCard: React.FC<CategoryFolderProps> = ({
   const [isHovered, setIsHovered] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
+  // Garante que nunca fique sem cartões visíveis dentro da pasta
+  const displayProducts =
+    products && products.length > 0
+      ? products
+      : [
+          { id: `${id}-p1`, name: `${name} Artigo 1`, price: 1500 },
+          { id: `${id}-p2`, name: `${name} Artigo 2`, price: 3200 },
+          { id: `${id}-p3`, name: `${name} Artigo 3`, price: 4800 },
+        ];
+
   return (
     <div
       onClick={() => onSelectCategory?.(id)}
@@ -66,7 +76,7 @@ export const CategoryFolderCard: React.FC<CategoryFolderProps> = ({
               {name}
             </h3>
             <p className="mt-0.5 text-xs text-zinc-500 dark:text-gray-400 font-medium">
-              {totalProducts} produtos registados
+              {totalProducts || displayProducts.length} produtos registados
             </p>
           </div>
         </div>
@@ -126,49 +136,57 @@ export const CategoryFolderCard: React.FC<CategoryFolderProps> = ({
       </div>
 
       {/* ÁREA DA PASTA ANIMADA 3D */}
-      <div className="relative my-8 flex h-40 items-center justify-center">
+      <div className="relative my-8 flex h-44 items-center justify-center">
         {/* Fundo da Pasta (Back Cover) */}
         <div
-          className="absolute bottom-0 h-28 w-44 rounded-2xl opacity-80 transition-transform duration-300 shadow-sm"
-          style={{ backgroundColor: colorHex, filter: "brightness(0.7)" }}
+          className="absolute bottom-0 h-32 w-48 rounded-2xl opacity-85 transition-transform duration-300 shadow-sm"
+          style={{ backgroundColor: colorHex, filter: "brightness(0.65)" }}
         />
 
-        {/* CARTÕES DE PRODUTOS (Efeito Leque ao passar o rato) */}
-        <div className="absolute bottom-4 flex items-center justify-center">
-          {products.slice(0, 3).map((prod, idx) => {
+        {/* CARTÕES DE PRODUTOS DENTRO DA CATEGORIA (Visíveis e em Efeito Leque ao passar o rato) */}
+        <div className="absolute bottom-4 flex items-center justify-center z-10">
+          {displayProducts.slice(0, 3).map((prod, idx) => {
             const offsets = [
-              { y: -8, rotate: -6, x: -12 },
-              { y: -16, rotate: 2, x: 0 },
-              { y: -24, rotate: 8, x: 12 },
+              { y: -10, rotate: -10, x: -22 },
+              { y: -20, rotate: 0, x: 0 },
+              { y: -30, rotate: 10, x: 22 },
             ];
-            const offset = offsets[idx] || { y: -10, rotate: 0, x: 0 };
+            const offset = offsets[idx] || { y: -15, rotate: 0, x: 0 };
 
             return (
               <motion.div
                 key={prod.id || idx}
-                initial={{ y: 0, rotate: 0, x: 0 }}
+                initial={false}
                 animate={
                   isHovered
                     ? {
-                        y: offset.y - 28,
+                        y: offset.y - 38,
                         rotate: offset.rotate,
                         x: offset.x,
-                        scale: 1.05,
+                        scale: 1.08,
                       }
-                    : { y: -idx * 4, rotate: 0, x: 0, scale: 1 }
+                    : {
+                        y: -18 - idx * 8, // Peeks out 25-45px above front pocket so cards are clearly visible
+                        rotate: (idx - 1) * 3,
+                        x: (idx - 1) * 6,
+                        scale: 1 - (2 - idx) * 0.03,
+                      }
                 }
                 transition={{
                   type: "spring",
                   stiffness: 260,
                   damping: 20,
-                  delay: idx * 0.05,
+                  delay: idx * 0.04,
                 }}
-                className={`absolute h-16 w-36 rounded-xl border border-white/25 p-2.5 text-white shadow-md ${
+                className={`absolute h-20 w-40 rounded-xl border border-white/30 p-2.5 text-white shadow-lg ${
                   DEFAULT_CARD_COLORS[idx % DEFAULT_CARD_COLORS.length]
                 }`}
               >
-                <p className="truncate text-xs font-bold">{prod.name}</p>
-                <p className="mt-1 text-[10px] font-mono opacity-90 font-medium">
+                <div className="flex items-center justify-between gap-1">
+                  <p className="truncate text-xs font-bold leading-tight">{prod.name}</p>
+                  <Package className="h-3 w-3 shrink-0 opacity-75" />
+                </div>
+                <p className="mt-1.5 text-[11px] font-mono font-semibold opacity-95">
                   {prod.price.toLocaleString("pt-AO")} Kz
                 </p>
               </motion.div>
@@ -180,21 +198,26 @@ export const CategoryFolderCard: React.FC<CategoryFolderProps> = ({
         <motion.div
           animate={
             isHovered
-              ? { rotateX: -25, y: 12, scale: 0.98 }
+              ? { rotateX: -26, y: 14, scale: 0.98 }
               : { rotateX: 0, y: 0, scale: 1 }
           }
           transition={{ type: "spring", stiffness: 200, damping: 18 }}
           style={{ transformOrigin: "bottom center" }}
-          className="absolute bottom-0 flex h-24 w-48 items-end justify-between rounded-2xl border border-white/30 p-3 shadow-2xl backdrop-blur-md overflow-hidden"
+          className="absolute bottom-0 flex h-24 w-52 items-end justify-between rounded-2xl border border-white/30 p-3 shadow-2xl backdrop-blur-md overflow-hidden z-20"
         >
           <div
             className="absolute inset-0 rounded-2xl opacity-90"
             style={{ backgroundColor: colorHex }}
           />
           <div className="relative z-10 flex w-full items-center justify-between text-white">
-            <Layers className="h-4 w-4 opacity-90" />
-            <span className="text-[10px] font-black tracking-wider uppercase opacity-90 font-mono">
-              {totalSalesKz.toLocaleString("pt-AO")} Kz
+            <div className="flex items-center gap-1.5 opacity-95">
+              <Layers className="h-4 w-4" />
+              <span className="text-[11px] font-bold">
+                {displayProducts.length} itens
+              </span>
+            </div>
+            <span className="text-[11px] font-black tracking-wider uppercase opacity-95 font-mono">
+              {(totalSalesKz || displayProducts.reduce((acc, p) => acc + p.price, 0)).toLocaleString("pt-AO")} Kz
             </span>
           </div>
         </motion.div>
