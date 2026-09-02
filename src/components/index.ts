@@ -37,6 +37,7 @@ export { POSHeader } from './pdv/POSHeader';
 export { StockDiscrepancyBanner, type DiscrepancyItem } from './pdv/StockDiscrepancyBanner';
 export { ReportZTemplate } from './pdv/ReportZTemplate';
 export { POSShiftCloseModal } from './pdv/POSShiftCloseModal';
+export { CashMovementModal as POSCashMovementModal } from './pdv/CashMovementModal';
 export { ThermalReceipt } from './ThermalReceipt';
 export { CustomersView } from './views/CustomersView';
 export { ReportsView } from './views/ReportsView';
