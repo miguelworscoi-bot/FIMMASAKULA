@@ -89,11 +89,6 @@ export const Header: React.FC<HeaderProps> = ({
           title: 'Relatórios',
           subtitle: 'Balanço financeiro, mapas de vendas e conformidade fiscal AGT',
         };
-      case 'admin':
-        return {
-          title: 'Painel Administrativo',
-          subtitle: 'Métricas globais de vendas, gestão de utilizadores e configurações da empresa',
-        };
       case 'settings':
         return {
           title: 'Configurações',

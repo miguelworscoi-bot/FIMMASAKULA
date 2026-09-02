@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Clock, TrendingUp, Award, UserCheck, Calendar } from 'lucide-react';
 import { formatKz } from '../../utils/formatters';
@@ -58,35 +58,14 @@ export const OPERATORS_ATTENDANCE_DATA = [
   },
 ];
 
-export interface AttendanceStatsModuleProps {
-  operatorId?: string;
-  isRestricted?: boolean;
-}
-
-export const AttendanceStatsModule: React.FC<AttendanceStatsModuleProps> = ({
-  operatorId,
-  isRestricted = false,
-}) => {
-  const [selectedOperatorId, setSelectedOperatorId] = useState<string>(() => {
-    if (operatorId && OPERATORS_ATTENDANCE_DATA.some(o => o.id === operatorId)) {
-      return operatorId;
-    }
-    return 'maria';
-  });
-
-  useEffect(() => {
-    if (operatorId && OPERATORS_ATTENDANCE_DATA.some(o => o.id === operatorId)) {
-      setSelectedOperatorId(operatorId);
-    }
-  }, [operatorId]);
+export const AttendanceStatsModule: React.FC = () => {
+  const [selectedOperatorId, setSelectedOperatorId] = useState<string>('maria');
 
   const currentOperator =
     OPERATORS_ATTENDANCE_DATA.find((op) => op.id === selectedOperatorId) || OPERATORS_ATTENDANCE_DATA[0];
 
   // Ordenar atendentes pelo total de horas trabalhadas (Ranking)
-  const rankedOperators = isRestricted
-    ? [currentOperator]
-    : [...OPERATORS_ATTENDANCE_DATA].sort((a, b) => b.totalHours - a.totalHours);
+  const rankedOperators = [...OPERATORS_ATTENDANCE_DATA].sort((a, b) => b.totalHours - a.totalHours);
 
   return (
     <div className="w-full space-y-6 select-none">
@@ -110,27 +89,20 @@ export const AttendanceStatsModule: React.FC<AttendanceStatsModuleProps> = ({
 
           {/* Tabs de Seleção de Operador */}
           <div className="flex bg-zinc-100/80 p-1 rounded-2xl gap-1 border border-zinc-200/50 flex-wrap">
-            {isRestricted ? (
-              <div className="px-3 py-1.5 rounded-xl text-xs font-black bg-zinc-950 text-white shadow-xs flex items-center gap-1.5">
-                <UserCheck size={13} className="text-[#E1FB15]" />
-                <span>Meu Horário ({currentOperator.name})</span>
-              </div>
-            ) : (
-              OPERATORS_ATTENDANCE_DATA.map((op) => (
-                <button
-                  key={op.id}
-                  type="button"
-                  onClick={() => setSelectedOperatorId(op.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    selectedOperatorId === op.id
-                      ? 'bg-zinc-950 text-white shadow-xs'
-                      : 'text-zinc-600 hover:text-zinc-950 hover:bg-white/80'
-                  }`}
-                >
-                  {op.name}
-                </button>
-              ))
-            )}
+            {OPERATORS_ATTENDANCE_DATA.map((op) => (
+              <button
+                key={op.id}
+                type="button"
+                onClick={() => setSelectedOperatorId(op.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  selectedOperatorId === op.id
+                    ? 'bg-zinc-950 text-white shadow-xs'
+                    : 'text-zinc-600 hover:text-zinc-950 hover:bg-white/80'
+                }`}
+              >
+                {op.name}
+              </button>
+            ))}
           </div>
         </div>
 

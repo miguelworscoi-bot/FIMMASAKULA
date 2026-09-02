@@ -84,14 +84,6 @@ export const MAIN_NAV_ITEMS: SidebarNavOption[] = [
     icon: BarChart3,
   },
   {
-    id: 'admin',
-    label: 'Painel Admin',
-    tooltip: 'Painel Administrativo Executivo & Gestão de Utilizadores',
-    icon: ShieldCheck,
-    badge: 'VIP',
-    badgeColor: 'bg-zinc-950 text-[#E1FB15]',
-  },
-  {
     id: 'ai_engine',
     label: 'Masakula AI',
     tooltip: 'Diagnóstico Preditivo & Inteligência Artificial',

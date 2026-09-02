@@ -19,10 +19,6 @@ export { NotificationsCenter } from './NotificationsCenter';
 export { LoginModal, AuthView } from './auth/AuthView';
 export { PinVerificationModal, type PinVerificationProps } from './auth/PinVerificationModal';
 export { PinLoginPage, type PinLoginPageProps, default as PinLoginScreen } from './auth/PinLoginPage';
-export { SecureCashCloseModal, type SecureCashCloseModalProps } from './auth/SecureCashCloseModal';
-export { OpeningCashModal, type OpeningCashModalProps } from './OpeningCashModal';
-export { ClosingCashModal, type ClosingCashModalProps, type ClosingResult } from './ClosingCashModal';
-export { DailyAttendantGoalsSummary, type DailyAttendantGoalsSummaryProps, type AttendantDailyGoal, type OperatorDaySalesSummary } from './goals/DailyAttendantGoalsSummary';
 export { RoleGuard } from './RoleGuard';
 
 // View Submodules & Modals
@@ -50,9 +46,6 @@ export { useDeadStock, type DeadStockItem } from '../hooks/useDeadStock';
 export { usePermissions, type UserRole as PermissionsUserRole, type UserProfile as PermissionsUserProfile } from '../hooks/usePermissions';
 export { SettingsView } from './views/SettingsView';
 export { DashboardView } from './views/DashboardView';
-export { AdminDashboardView } from './views/AdminDashboardView';
-export { UsersManagementPage, type Operator } from './views/UsersManagementPage';
-export { ProductsManagementPage, type Category as ProductCategory, type ProductItem } from './views/ProductsManagementPage';
 
 // Intro Submodules
 
@@ -127,4 +120,5 @@ export { ProductRegistrationForm } from './admin/ProductRegistrationForm';
 export type { ProductRegistrationFormProps } from './admin/ProductRegistrationForm';
 export { StockEntryModal } from './admin/StockEntryModal';
 export type { StockEntryModalProps, StockEntryData } from './admin/StockEntryModal';
+export { ProductsManagementPage } from '../screens/ProductsManagementPage';
 

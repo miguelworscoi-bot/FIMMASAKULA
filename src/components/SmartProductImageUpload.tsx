@@ -151,7 +151,7 @@ export function SmartProductImageUpload({ onImageProcessed, initialImageUrl }: S
   };
 
   return (
-    <div className="w-full bg-white border border-neutral-200 rounded-3xl p-5 select-none shadow-xs">
+    <div className="w-full bg-neutral-900 border border-neutral-800 rounded-3xl p-6 select-none">
       <input
         type="file"
         ref={fileInputRef}
@@ -162,26 +162,26 @@ export function SmartProductImageUpload({ onImageProcessed, initialImageUrl }: S
 
       {/* ⏳ ECRÃ DE PROGRESSO DETALHADO */}
       {isProcessing && (
-        <div className="min-h-[300px] bg-neutral-50 border border-neutral-200 rounded-2xl p-5 flex flex-col justify-between">
+        <div className="min-h-[320px] bg-neutral-950 border border-neutral-800 rounded-2xl p-6 flex flex-col justify-between">
           {/* Header com percentagem total */}
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-[10px] font-black uppercase text-emerald-700 tracking-widest bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+              <span className="text-[10px] font-black uppercase text-[#E1FB15] tracking-widest bg-[#E1FB15]/10 px-2.5 py-1 rounded-full border border-[#E1FB15]/20">
                 Pipeline HD Ativo
               </span>
-              <h4 className="text-sm font-extrabold text-neutral-900 mt-2">Processando Fotografia</h4>
+              <h4 className="text-base font-extrabold text-white mt-2">Processando Fotografia</h4>
             </div>
             <div className="text-right">
-              <span className="text-3xl font-black text-emerald-600">{totalProgress}%</span>
-              <p className="text-[10px] text-neutral-400 font-bold">Concluído</p>
+              <span className="text-3xl font-black text-[#E1FB15]">{totalProgress}%</span>
+              <p className="text-[10px] text-neutral-500 font-bold">Concluído</p>
             </div>
           </div>
 
-          {/* Barra de Progresso Principal */}
+          {/* Barra de Progresso Principal (Neon Yellow) */}
           <div className="w-full my-4">
-            <div className="w-full h-3 bg-neutral-200 rounded-full overflow-hidden p-0.5 border border-neutral-300/60">
+            <div className="w-full h-3 bg-neutral-900 rounded-full overflow-hidden p-0.5 border border-neutral-800">
               <div
-                className="h-full bg-gradient-to-r from-[#32D583] to-[#E1FB15] rounded-full transition-all duration-300 ease-out shadow-xs"
+                className="h-full bg-gradient-to-r from-[#32D583] to-[#E1FB15] rounded-full transition-all duration-300 ease-out"
                 style={{ width: `${totalProgress}%` }}
               />
             </div>
@@ -199,28 +199,28 @@ export function SmartProductImageUpload({ onImageProcessed, initialImageUrl }: S
                   key={step.id}
                   className={`p-3 rounded-xl border transition-all flex items-center justify-between ${
                     isCurrent
-                      ? "bg-white border-emerald-500 shadow-sm"
+                      ? "bg-neutral-900 border-[#E1FB15]/50 shadow-lg shadow-[#E1FB15]/5"
                       : isCompleted
-                      ? "bg-emerald-50/50 border-emerald-200/80 opacity-90"
-                      : "bg-white border-neutral-200/60 opacity-50"
+                      ? "bg-neutral-900/60 border-neutral-800 opacity-80"
+                      : "bg-neutral-950 border-neutral-800/40 opacity-40"
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
                     <div
                       className={`p-1.5 rounded-lg ${
                         isCurrent
-                          ? "bg-zinc-950 text-[#E1FB15]"
+                          ? "bg-[#E1FB15] text-black"
                           : isCompleted
-                          ? "bg-[#32D583]/20 text-emerald-700"
-                          : "bg-neutral-100 text-neutral-400"
+                          ? "bg-[#32D583]/20 text-[#32D583]"
+                          : "bg-neutral-800 text-neutral-500"
                       }`}
                     >
                       <Icon className="w-4 h-4" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-neutral-800 line-clamp-1">{step.name}</p>
+                      <p className="text-xs font-bold text-white line-clamp-1">{step.name}</p>
                       {isCurrent && (
-                        <p className="text-[10px] text-emerald-600 font-semibold">
+                        <p className="text-[10px] text-[#E1FB15] font-semibold">
                           Progresso da etapa: {stepProgress}%
                         </p>
                       )}
@@ -229,8 +229,8 @@ export function SmartProductImageUpload({ onImageProcessed, initialImageUrl }: S
 
                   {/* Estado do Ícone */}
                   <div>
-                    {isCompleted && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
-                    {isCurrent && <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" />}
+                    {isCompleted && <CheckCircle2 className="w-4 h-4 text-[#32D583]" />}
+                    {isCurrent && <Loader2 className="w-4 h-4 text-[#E1FB15] animate-spin" />}
                   </div>
                 </div>
               );
@@ -242,9 +242,9 @@ export function SmartProductImageUpload({ onImageProcessed, initialImageUrl }: S
       {/* 🖼️ PRÉ-VISUALIZAÇÃO APÓS CONCLUÍDO */}
       {!isProcessing && previewUrl && (
         <div className="flex flex-col items-center">
-          <div className="w-full h-64 bg-neutral-50 border border-neutral-200 rounded-2xl flex items-center justify-center p-6 relative overflow-hidden bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]">
+          <div className="w-full h-72 bg-neutral-950 border border-neutral-800 rounded-2xl flex items-center justify-center p-6 relative overflow-hidden bg-[radial-gradient(#262626_1px,transparent_1px)] [background-size:16px_16px]">
             
-            <div className="absolute top-3 left-3 bg-[#32D583] text-black text-[10px] font-black px-2.5 py-1 rounded-full flex items-center gap-1 shadow-xs">
+            <div className="absolute top-3 left-3 bg-[#32D583] text-black text-[10px] font-black px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md">
               <CheckCircle2 className="w-3 h-3 stroke-[3]" />
               <span>1:1 HD Transparente</span>
             </div>
@@ -252,16 +252,16 @@ export function SmartProductImageUpload({ onImageProcessed, initialImageUrl }: S
             <img
               src={previewUrl}
               alt="Produto Otimizado"
-              className="max-h-full max-w-full object-contain drop-shadow-[0_12px_20px_rgba(0,0,0,0.15)]"
+              className="max-h-full max-w-full object-contain drop-shadow-[0_16px_24px_rgba(0,0,0,0.95)]"
             />
           </div>
 
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="mt-3.5 px-4 py-2 bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 text-xs font-bold text-neutral-800 rounded-xl flex items-center gap-2 transition cursor-pointer"
+            className="mt-4 px-4 py-2 bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 text-xs font-bold text-[#E1FB15] rounded-xl flex items-center gap-2 transition cursor-pointer"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-emerald-600" />
+            <RefreshCw className="w-3.5 h-3.5" />
             <span>Processar Nova Fotografia</span>
           </button>
         </div>
@@ -271,15 +271,15 @@ export function SmartProductImageUpload({ onImageProcessed, initialImageUrl }: S
       {!isProcessing && !previewUrl && (
         <div
           onClick={() => fileInputRef.current?.click()}
-          className="h-60 border-2 border-dashed border-neutral-200 hover:border-emerald-500 hover:bg-emerald-50/30 rounded-2xl cursor-pointer flex flex-col items-center justify-center gap-3 transition group p-6 text-center bg-neutral-50/60"
+          className="h-72 border-2 border-dashed border-neutral-800 hover:border-[#E1FB15]/50 hover:bg-neutral-950/50 rounded-2xl cursor-pointer flex flex-col items-center justify-center gap-3 transition group p-6 text-center"
         >
-          <div className="p-3.5 bg-white border border-neutral-200 group-hover:border-emerald-400 group-hover:shadow-xs rounded-2xl transition">
-            <Upload className="w-6 h-6 text-neutral-400 group-hover:text-emerald-600" />
+          <div className="p-3.5 bg-neutral-950 border border-neutral-800 group-hover:border-[#E1FB15]/40 rounded-2xl transition">
+            <Upload className="w-6 h-6 text-neutral-400 group-hover:text-[#E1FB15]" />
           </div>
           <div>
-            <p className="text-sm font-extrabold text-neutral-800">Carregar Imagem do Produto</p>
-            <p className="text-xs text-neutral-500 mt-1 max-w-xs">
-              O sistema aplicará <span className="text-emerald-600 font-bold">Remoção de Fundo</span>, <span className="text-emerald-600 font-bold">Nitidez HD</span> e <span className="text-neutral-800 font-bold">Enquadramento 1:1</span> automaticamente.
+            <p className="text-sm font-extrabold text-white">Carregar Imagem do Produto</p>
+            <p className="text-xs text-neutral-400 mt-1 max-w-xs">
+              O sistema aplicará <span className="text-[#E1FB15] font-bold">Remoção de Fundo</span>, <span className="text-[#32D583] font-bold">Nitidez HD</span> e <span className="text-white font-bold">Enquadramento 1:1</span> automaticamente.
             </p>
           </div>
         </div>
