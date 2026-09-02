@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import { existsSync } from "fs";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 
@@ -19,6 +20,8 @@ import {
 async function startServer() {
   const app = express();
   const PORT = 3000;
+  const distPath = path.join(process.cwd(), "dist");
+  const hasProductionBuild = existsSync(path.join(distPath, "index.html"));
 
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ extended: true, limit: "50mb" }));
@@ -44,14 +47,13 @@ async function startServer() {
   app.post("/api/email/shift-report-z", expressSendShiftReportZEmailHandler);
 
   // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== "production" || !hasProductionBuild) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (_req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
