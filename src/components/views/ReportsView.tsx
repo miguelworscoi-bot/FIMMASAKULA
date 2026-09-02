@@ -10,15 +10,17 @@ import {
   ShoppingBag, 
   ArrowUpRight, 
   CheckCircle2, 
-  RefreshCw,
-  FileSpreadsheet,
-  PieChart,
-  Activity
+  RefreshCw, 
+  FileSpreadsheet, 
+  PieChart, 
+  Activity,
+  ShieldCheck
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { SaleTransaction, Product } from '../../types';
 import ReportsScreen from '../ReportsScreen';
 import ReportZModal, { ReportZData } from '../ReportZModal';
+import { ShiftAnalyticsPage } from '../ShiftAnalyticsPage';
 
 interface SaleRecord {
   id: string;
@@ -45,7 +47,7 @@ interface ReportsViewProps {
 }
 
 export const ReportsView: React.FC<ReportsViewProps> = ({ sales: localSales = [] }) => {
-  const [activeTab, setActiveTab] = useState<'daily' | 'analytics'>('analytics');
+  const [activeTab, setActiveTab] = useState<'daily' | 'analytics' | 'audit'>('analytics');
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0]
   );
@@ -211,8 +213,8 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ sales: localSales = []
   return (
     <div id="view-reports" className="space-y-6 animate-in fade-in duration-200">
       
-      {/* Sub-Navegação de Relatórios: Analytics vs Fecho Diário */}
-      <div className="flex items-center gap-2 border-b border-gray-200 pb-2">
+      {/* Sub-Navegação de Relatórios: Analytics vs Fecho Diário vs Auditoria */}
+      <div className="flex items-center gap-2 border-b border-gray-200 pb-2 flex-wrap">
         <button
           type="button"
           onClick={() => setActiveTab('analytics')}
@@ -224,6 +226,19 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ sales: localSales = []
         >
           <Activity size={15} />
           <span>Analytics & Rentabilidade</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('audit')}
+          className={`px-4 py-2.5 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'audit'
+              ? 'bg-[#131313] text-[#E1FB15] shadow-xs'
+              : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+          }`}
+        >
+          <ShieldCheck size={15} />
+          <span>Auditoria & Quebras</span>
         </button>
 
         <button
@@ -240,7 +255,9 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ sales: localSales = []
         </button>
       </div>
 
-      {activeTab === 'analytics' ? (
+      {activeTab === 'audit' ? (
+        <ShiftAnalyticsPage />
+      ) : activeTab === 'analytics' ? (
         <ReportsScreen />
       ) : (
         <>

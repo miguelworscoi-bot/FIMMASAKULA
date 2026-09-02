@@ -27,6 +27,7 @@ export default function ReportsScreen() {
   const [activeBarHover, setActiveBarHover] = useState<number | null>(null);
   const [activeLineHover, setActiveLineHover] = useState<number | null>(null);
   const [activePieHover, setActivePieHover] = useState<number | null>(null);
+  const [isUserHovering, setIsUserHovering] = useState(false);
 
   // -------------------------------------------------------------
   // DADOS 1: EVOLUÇÃO DE VENDAS E LUCRO POR HORA (Colunas & Linhas)
@@ -50,6 +51,17 @@ export default function ReportsScreen() {
     { method: 'MCX Express',     amount: 210000, percentage: 13, color: '#E1FB15' },
     { method: 'Transferência',   amount: 125000, percentage: 8,  color: '#3B82F6' },
   ]);
+
+  // Animação Autônoma dos Gráficos (percorre colunas e pizza automaticamente)
+  useEffect(() => {
+    if (isUserHovering) return;
+    const interval = setInterval(() => {
+      setActiveBarHover((prev) => (prev === null ? 0 : (prev + 1) % hourlyData.length));
+      setActivePieHover((prev) => (prev === null ? 0 : (prev + 1) % paymentData.length));
+    }, 2800);
+
+    return () => clearInterval(interval);
+  }, [isUserHovering, hourlyData.length, paymentData.length]);
 
   useEffect(() => {
     fetchReportData();
@@ -261,7 +273,11 @@ export default function ReportsScreen() {
           </div>
 
           {/* Renderização em Colunas de SVG */}
-          <div className="h-48 flex items-end justify-between gap-3 pt-6 pb-2 border-b border-gray-100 px-2">
+          <div 
+            className="h-48 flex items-end justify-between gap-3 pt-6 pb-2 border-b border-gray-100 px-2"
+            onMouseEnter={() => setIsUserHovering(true)}
+            onMouseLeave={() => setIsUserHovering(false)}
+          >
             {hourlyData.map((item, idx) => {
               const heightPercent = Math.max((item.revenue / maxRevenue) * 100, 8);
               const isHovered = activeBarHover === idx;

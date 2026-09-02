@@ -24,6 +24,7 @@ export type ActiveTab =
   | 'goals'
   | 'attendance'
   | 'reports'
+  | 'audit'
   | 'settings'
   | 'ai_engine';
 
@@ -224,3 +225,4 @@ export type {
   ShiftRecord
 } from './cash';
 export * from './cash';
+export * from './audit';

@@ -58,24 +58,24 @@ export function CloseShiftModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 select-none animate-in fade-in duration-200">
-      <div className="bg-neutral-900 border border-neutral-800 w-full max-w-lg rounded-3xl p-6 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 select-none animate-in fade-in duration-200">
+      <div className="bg-white border border-zinc-200 w-full max-w-lg rounded-3xl p-6 shadow-2xl relative">
         
         {/* CABEÇALHO */}
-        <div className="flex justify-between items-center mb-6 border-b border-neutral-800 pb-4">
+        <div className="flex justify-between items-center mb-6 border-b border-zinc-200 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center font-bold">
               <Vault className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-black text-white">Fecho de Caixa & Relatório Z</h3>
-              <p className="text-[11px] text-neutral-400">Apuramento de valores e encerramento do turno</p>
+              <h3 className="text-base font-black text-zinc-900">Fecho de Caixa & Relatório Z</h3>
+              <p className="text-[11px] text-zinc-500">Apuramento de valores e encerramento do turno</p>
             </div>
           </div>
           <button 
             type="button"
             onClick={onClose} 
-            className="p-2 text-neutral-500 hover:text-white rounded-xl bg-neutral-950 border border-neutral-800 transition cursor-pointer"
+            className="p-2 text-zinc-400 hover:text-zinc-900 rounded-xl bg-zinc-100 border border-zinc-200 transition cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -86,28 +86,28 @@ export function CloseShiftModal({
           <form onSubmit={handleCloseShift} className="space-y-5">
             {/* RESUMO DOS VALORES SISTÊMICOS */}
             <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-              <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800">
-                <span className="text-neutral-500 block text-[10px]">Fundo Inicial</span>
-                <span className="text-white font-bold">{initialCash.toLocaleString("pt-AO")} Kz</span>
+              <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-200">
+                <span className="text-zinc-500 block text-[10px]">Fundo Inicial</span>
+                <span className="text-zinc-900 font-bold">{initialCash.toLocaleString("pt-AO")} Kz</span>
               </div>
-              <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800">
-                <span className="text-neutral-500 block text-[10px]">Vendas Dinheiro (Est.)</span>
-                <span className="text-emerald-400 font-bold">+{salesCashEstimate.toLocaleString("pt-AO")} Kz</span>
+              <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-200">
+                <span className="text-zinc-500 block text-[10px]">Vendas Dinheiro (Est.)</span>
+                <span className="text-emerald-600 font-bold">+{salesCashEstimate.toLocaleString("pt-AO")} Kz</span>
               </div>
-              <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800">
-                <span className="text-neutral-500 block text-[10px]">Sangrias / Reforços</span>
-                <span className="text-neutral-300 font-bold">-{totalSangria.toLocaleString()} / +{totalReforco.toLocaleString()}</span>
+              <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-200">
+                <span className="text-zinc-500 block text-[10px]">Sangrias / Reforços</span>
+                <span className="text-zinc-700 font-bold">-{totalSangria.toLocaleString()} / +{totalReforco.toLocaleString()}</span>
               </div>
-              <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800">
-                <span className="text-neutral-500 block text-[10px]">Saldo Esperado</span>
-                <span className="text-indigo-400 font-bold">{expectedCash.toLocaleString("pt-AO")} Kz</span>
+              <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-200">
+                <span className="text-zinc-500 block text-[10px]">Saldo Esperado</span>
+                <span className="text-indigo-600 font-bold">{expectedCash.toLocaleString("pt-AO")} Kz</span>
               </div>
             </div>
 
             {/* ENTRADA DA CONTAGEM REAL */}
             <div>
-              <label className="text-xs font-bold text-neutral-300 mb-1.5 flex items-center gap-1.5">
-                <Calculator className="w-4 h-4 text-indigo-400" />
+              <label className="text-xs font-bold text-zinc-700 mb-1.5 flex items-center gap-1.5">
+                <Calculator className="w-4 h-4 text-indigo-600" />
                 Valor Contado na Gaveta (Valor Real - Kz)
               </label>
               <input
@@ -117,7 +117,7 @@ export function CloseShiftModal({
                 placeholder="0.00"
                 value={actualCash}
                 onChange={(e) => setActualCash(e.target.value)}
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-xl font-mono font-black text-white outline-none focus:border-indigo-500 transition"
+                className="w-full bg-zinc-50 focus:bg-white border border-zinc-300 rounded-xl p-4 text-xl font-mono font-black text-zinc-900 outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
               />
             </div>
 
@@ -125,10 +125,10 @@ export function CloseShiftModal({
             {actualCash !== "" && (
               <div className={`p-4 rounded-xl border text-xs font-mono flex items-center justify-between ${
                 tempDiff === 0 
-                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" 
+                  ? "bg-emerald-50 border-emerald-200 text-emerald-800" 
                   : tempDiff < 0 
-                  ? "bg-rose-500/10 border-rose-500/30 text-rose-400" 
-                  : "bg-indigo-500/10 border-indigo-500/30 text-indigo-400"
+                  ? "bg-rose-50 border-rose-200 text-rose-800" 
+                  : "bg-indigo-50 border-indigo-200 text-indigo-800"
               }`}>
                 <div className="flex items-center gap-2">
                   {tempDiff === 0 ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
@@ -141,7 +141,7 @@ export function CloseShiftModal({
             <button
               type="submit"
               disabled={loading || actualCash === ""}
-              className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-xl transition flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-4 bg-zinc-900 hover:bg-zinc-800 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Encerrar Turno e Gerar Relatório Z"}
             </button>
@@ -149,26 +149,26 @@ export function CloseShiftModal({
         ) : (
           /* RESUMO FINAL RELATÓRIO Z GENERATED */
           <div className="space-y-5">
-            <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-400 text-xs text-center font-bold">
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-xs text-center font-bold">
               Turno Encerrado com Sucesso!
             </div>
 
-            <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800 space-y-2 text-xs font-mono">
-              <div className="flex justify-between text-neutral-400">
+            <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-200 space-y-2 text-xs font-mono">
+              <div className="flex justify-between text-zinc-600">
                 <span>Vendas Totais:</span>
-                <span className="text-white font-bold">{reportZData.totalSales.toLocaleString("pt-AO")} Kz</span>
+                <span className="text-zinc-900 font-bold">{reportZData.totalSales.toLocaleString("pt-AO")} Kz</span>
               </div>
-              <div className="flex justify-between text-neutral-400">
+              <div className="flex justify-between text-zinc-600">
                 <span>Total Dinheiro Esperado:</span>
-                <span className="text-white font-bold">{reportZData.expectedCash.toLocaleString("pt-AO")} Kz</span>
+                <span className="text-zinc-900 font-bold">{reportZData.expectedCash.toLocaleString("pt-AO")} Kz</span>
               </div>
-              <div className="flex justify-between text-neutral-400">
+              <div className="flex justify-between text-zinc-600">
                 <span>Total Dinheiro Contado:</span>
-                <span className="text-white font-bold">{reportZData.actualCash.toLocaleString("pt-AO")} Kz</span>
+                <span className="text-zinc-900 font-bold">{reportZData.actualCash.toLocaleString("pt-AO")} Kz</span>
               </div>
-              <div className="border-t border-neutral-800 pt-2 flex justify-between font-bold">
+              <div className="border-t border-zinc-200 pt-2 flex justify-between font-bold">
                 <span>Diferença Final (Z):</span>
-                <span className={reportZData.difference < 0 ? "text-rose-400" : "text-emerald-400"}>
+                <span className={reportZData.difference < 0 ? "text-rose-600" : "text-emerald-600"}>
                   {reportZData.difference.toLocaleString("pt-AO")} Kz
                 </span>
               </div>
@@ -177,9 +177,9 @@ export function CloseShiftModal({
             <button
               type="button"
               onClick={() => alert("Comando ESC/POS enviado para a impressora.")}
-              className="w-full py-3 bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition cursor-pointer"
+              className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition cursor-pointer"
             >
-              <Printer className="w-4 h-4 text-emerald-400" />
+              <Printer className="w-4 h-4 text-zinc-200" />
               Imprimir Relatório Z (ESC/POS)
             </button>
           </div>

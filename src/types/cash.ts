@@ -44,3 +44,7 @@ export interface BreakageTrendPoint {
   date: string;
   [operatorName: string]: number | string; // Dinâmico por operador para gráfico multilinhas
 }
+
+export type { DivergenceReason, BreakageReasonSummary } from './audit';
+export { REASON_CONFIG } from './audit';
+

@@ -1,0 +1,238 @@
+"use client";
+
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { Layers, Pencil, Trash2, MoreVertical, Package, ChevronRight } from "lucide-react";
+
+export interface ProductItem {
+  id: string;
+  name: string;
+  price: number;
+  color?: string;
+}
+
+export interface CategoryFolderProps {
+  id: string;
+  name: string;
+  totalProducts: number;
+  totalSalesKz: number;
+  colorHex?: string;
+  products: ProductItem[];
+  onSelectCategory?: (id: string) => void;
+  onEditCategory?: (id: string) => void;
+  onDeleteCategory?: (id: string) => void;
+}
+
+const DEFAULT_CARD_COLORS = [
+  "bg-rose-500",
+  "bg-amber-500",
+  "bg-cyan-500",
+  "bg-emerald-500",
+];
+
+export const CategoryFolderCard: React.FC<CategoryFolderProps> = ({
+  id,
+  name,
+  totalProducts,
+  totalSalesKz,
+  colorHex = "#32D583",
+  products = [],
+  onSelectCategory,
+  onEditCategory,
+  onDeleteCategory,
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+
+  return (
+    <div
+      onClick={() => onSelectCategory?.(id)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        setShowMenu(false);
+      }}
+      className="group relative flex cursor-pointer flex-col justify-between rounded-3xl border border-gray-200/80 bg-white dark:bg-[#131313] dark:border-white/10 p-6 transition-all duration-300 hover:border-gray-300 hover:shadow-xl dark:hover:border-white/20 dark:hover:bg-[#181818] dark:hover:shadow-2xl shadow-sm select-none"
+    >
+      {/* CABEÇALHO + FERRAMENTAS (EDITAR / ELIMINAR) */}
+      <div className="z-30 flex items-start justify-between">
+        <div className="flex items-center gap-2.5">
+          <span
+            className="h-3.5 w-3.5 rounded-full shrink-0 shadow-xs"
+            style={{ backgroundColor: colorHex }}
+          />
+          <div>
+            <h3 className="text-base font-bold text-zinc-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+              {name}
+            </h3>
+            <p className="mt-0.5 text-xs text-zinc-500 dark:text-gray-400 font-medium">
+              {totalProducts} produtos registados
+            </p>
+          </div>
+        </div>
+
+        {/* Menu de Ações Rápidas */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowMenu((prev) => !prev);
+            }}
+            className="flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 dark:border-white/10 bg-zinc-50 dark:bg-white/5 text-zinc-500 dark:text-gray-400 transition hover:bg-zinc-100 dark:hover:bg-white/10 hover:text-zinc-900 dark:hover:text-white cursor-pointer"
+            title="Opções da categoria"
+          >
+            <MoreVertical className="h-4 w-4" />
+          </button>
+
+          {/* Dropdown Flutuante */}
+          <AnimatePresence>
+            {showMenu && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 top-10 z-50 w-36 overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1c1c1c] p-1.5 shadow-2xl backdrop-blur-xl"
+              >
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMenu(false);
+                    onEditCategory?.(id);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-zinc-700 dark:text-gray-200 transition hover:bg-zinc-100 dark:hover:bg-white/10 hover:text-zinc-950 dark:hover:text-white cursor-pointer"
+                >
+                  <Pencil className="h-3.5 w-3.5 text-cyan-500 dark:text-cyan-400" />
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMenu(false);
+                    onDeleteCategory?.(id);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 transition hover:bg-rose-50 dark:hover:bg-rose-500/10 cursor-pointer"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Eliminar
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* ÁREA DA PASTA ANIMADA 3D */}
+      <div className="relative my-8 flex h-40 items-center justify-center">
+        {/* Fundo da Pasta (Back Cover) */}
+        <div
+          className="absolute bottom-0 h-28 w-44 rounded-2xl opacity-80 transition-transform duration-300 shadow-sm"
+          style={{ backgroundColor: colorHex, filter: "brightness(0.7)" }}
+        />
+
+        {/* CARTÕES DE PRODUTOS (Efeito Leque ao passar o rato) */}
+        <div className="absolute bottom-4 flex items-center justify-center">
+          {products.slice(0, 3).map((prod, idx) => {
+            const offsets = [
+              { y: -8, rotate: -6, x: -12 },
+              { y: -16, rotate: 2, x: 0 },
+              { y: -24, rotate: 8, x: 12 },
+            ];
+            const offset = offsets[idx] || { y: -10, rotate: 0, x: 0 };
+
+            return (
+              <motion.div
+                key={prod.id || idx}
+                initial={{ y: 0, rotate: 0, x: 0 }}
+                animate={
+                  isHovered
+                    ? {
+                        y: offset.y - 28,
+                        rotate: offset.rotate,
+                        x: offset.x,
+                        scale: 1.05,
+                      }
+                    : { y: -idx * 4, rotate: 0, x: 0, scale: 1 }
+                }
+                transition={{
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 20,
+                  delay: idx * 0.05,
+                }}
+                className={`absolute h-16 w-36 rounded-xl border border-white/25 p-2.5 text-white shadow-md ${
+                  DEFAULT_CARD_COLORS[idx % DEFAULT_CARD_COLORS.length]
+                }`}
+              >
+                <p className="truncate text-xs font-bold">{prod.name}</p>
+                <p className="mt-1 text-[10px] font-mono opacity-90 font-medium">
+                  {prod.price.toLocaleString("pt-AO")} Kz
+                </p>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Capa Frontal da Pasta (Front Pocket) com Gradiente Glassmorphism */}
+        <motion.div
+          animate={
+            isHovered
+              ? { rotateX: -25, y: 12, scale: 0.98 }
+              : { rotateX: 0, y: 0, scale: 1 }
+          }
+          transition={{ type: "spring", stiffness: 200, damping: 18 }}
+          style={{ transformOrigin: "bottom center" }}
+          className="absolute bottom-0 flex h-24 w-48 items-end justify-between rounded-2xl border border-white/30 p-3 shadow-2xl backdrop-blur-md overflow-hidden"
+        >
+          <div
+            className="absolute inset-0 rounded-2xl opacity-90"
+            style={{ backgroundColor: colorHex }}
+          />
+          <div className="relative z-10 flex w-full items-center justify-between text-white">
+            <Layers className="h-4 w-4 opacity-90" />
+            <span className="text-[10px] font-black tracking-wider uppercase opacity-90 font-mono">
+              {totalSalesKz.toLocaleString("pt-AO")} Kz
+            </span>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* RODAPÉ DO CARD COM AÇÕES RÁPIDAS AO PASSAR O RATO */}
+      <div className="z-20 flex items-center justify-between border-t border-gray-100 dark:border-white/5 pt-3 text-xs text-zinc-500 dark:text-gray-400">
+        <span className="text-[11px] font-medium group-hover:text-zinc-900 dark:group-hover:text-zinc-200 transition-colors flex items-center gap-1">
+          Clique para gerir stock
+          <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEditCategory?.(id);
+            }}
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+            title="Editar Categoria"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteCategory?.(id);
+            }}
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
+            title="Eliminar Categoria"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CategoryFolderCard;

@@ -2,9 +2,9 @@
 
 import React, { useState } from "react";
 import { FileSpreadsheet, FileText, Mail, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
-import { exportBreakageToExcel } from "@/lib/exportExcel";
-import { exportBreakageToPdf } from "@/lib/exportPdf";
-import { OperatorPerformance } from "@/types/analytics";
+import { exportBreakageToExcel } from "../utils/exportBreakageToExcel";
+import { exportBreakageToPdf } from "../utils/exportBreakageToPdf";
+import { OperatorPerformance } from "../types/analytics";
 
 interface ExportButtonsProps {
   data: OperatorPerformance[];

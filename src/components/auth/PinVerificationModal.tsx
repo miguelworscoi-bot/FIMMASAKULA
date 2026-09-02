@@ -113,12 +113,12 @@ export function PinVerificationModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="w-full max-w-sm bg-neutral-900/90 border border-neutral-800/80 rounded-3xl p-8 backdrop-blur-xl shadow-2xl flex flex-col items-center text-center relative overflow-hidden transition-colors duration-700"
+        className="w-full max-w-sm bg-white border border-zinc-200 rounded-3xl p-8 shadow-2xl flex flex-col items-center text-center relative overflow-hidden transition-colors duration-700"
       >
         {/* ONDA DE FUNDO SUBINDO EM AZUL BEBÉ NA VERIFICAÇÃO COM SUCESSO */}
         {status === "success" && (
@@ -151,7 +151,7 @@ export function PinVerificationModal({
             type="button"
             onClick={onClose}
             aria-label="Fechar"
-            className="absolute top-4 right-4 z-20 p-2 text-neutral-400 hover:text-white rounded-full hover:bg-neutral-800/50 transition cursor-pointer"
+            className="absolute top-4 right-4 z-20 p-2 text-zinc-400 hover:text-zinc-900 rounded-full hover:bg-zinc-100 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -161,10 +161,10 @@ export function PinVerificationModal({
         <div
           className={`absolute -top-24 left-1/2 -translate-x-1/2 w-48 h-48 rounded-full blur-3xl transition-all duration-700 pointer-events-none ${
             status === "success"
-              ? "bg-sky-400/30"
+              ? "bg-sky-400/20"
               : status === "error"
-              ? "bg-red-500/30"
-              : "bg-indigo-600/30"
+              ? "bg-red-500/15"
+              : "bg-indigo-600/10"
           }`}
         />
 
@@ -173,14 +173,10 @@ export function PinVerificationModal({
           animate={status === "success" ? { y: -5 } : { y: 0 }}
           className="space-y-1 mb-8 relative z-10"
         >
-          <h3 className={`text-xl font-extrabold tracking-tight transition-colors duration-500 ${
-            status === "success" ? "text-slate-950" : "text-white"
-          }`}>
+          <h3 className="text-xl font-extrabold tracking-tight text-zinc-900">
             {status === "success" ? "Verificação Bem-sucedida" : title}
           </h3>
-          <p className={`text-xs max-w-[240px] mx-auto leading-relaxed transition-colors duration-500 ${
-            status === "success" ? "text-slate-700 font-semibold" : "text-neutral-400"
-          }`}>
+          <p className="text-xs max-w-[240px] mx-auto leading-relaxed text-zinc-500">
             {status === "success"
               ? `O seu código de segurança de 4 dígitos ${pin.join("")} foi verificado.`
               : subtitle}
@@ -208,10 +204,10 @@ export function PinVerificationModal({
                         : { scale: digit ? 1.05 : 1 }
                     }
                     transition={{ duration: 0.3 }}
-                    className={`relative w-14 h-16 rounded-2xl flex items-center justify-center transition-all duration-300 overflow-hidden shadow-lg ${
+                    className={`relative w-14 h-16 rounded-2xl flex items-center justify-center transition-all duration-300 overflow-hidden shadow-sm ${
                       digit
-                        ? "border-2 border-sky-400 shadow-sky-400/30 ring-2 ring-sky-300/40"
-                        : "bg-neutral-900 border-2 border-neutral-800 hover:border-neutral-700 shadow-black/50"
+                        ? "border-2 border-sky-500 shadow-sky-500/20 ring-2 ring-sky-300/40 bg-white"
+                        : "bg-zinc-50 border-2 border-zinc-200 hover:border-zinc-300"
                     }`}
                   >
                     {/* Animação de Onda Subindo em Azul Bebé */}
@@ -260,7 +256,7 @@ export function PinVerificationModal({
                       onKeyDown={(e) => handleKeyDown(index, e)}
                       onPaste={handlePaste}
                       className={`w-full h-full text-center text-2xl font-black bg-transparent outline-none cursor-pointer relative z-10 transition-colors ${
-                        digit ? "text-slate-950 font-black" : "text-white"
+                        digit ? "text-slate-950 font-black" : "text-zinc-900"
                       }`}
                     />
                   </motion.div>
@@ -308,7 +304,7 @@ export function PinVerificationModal({
           <motion.p
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-xs font-bold text-red-400 mt-3 flex items-center gap-1"
+            className="text-xs font-bold text-red-600 mt-3 flex items-center gap-1"
           >
             <AlertCircle className="w-3.5 h-3.5" />
             <span>{errorMessage}</span>
@@ -318,14 +314,14 @@ export function PinVerificationModal({
         {/* RODAPÉ: REENVIAR / REINICIAR */}
         {status !== "success" && (
           <div className="mt-8 relative z-10 flex items-center gap-1.5 text-xs">
-            <span className="text-neutral-500 font-medium">Não recebeu o código?</span>
+            <span className="text-zinc-400 font-medium">Não recebeu o código?</span>
             <button
               type="button"
               onClick={() => {
                 handleReset();
                 if (onResend) onResend();
               }}
-              className="font-extrabold text-indigo-400 hover:text-indigo-300 transition underline underline-offset-4 cursor-pointer"
+              className="font-extrabold text-indigo-600 hover:text-indigo-700 transition underline underline-offset-4 cursor-pointer"
             >
               Reenviar OTP
             </button>

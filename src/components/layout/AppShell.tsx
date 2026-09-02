@@ -32,6 +32,7 @@ import { GoalsView } from '../views/GoalsView';
 import { ReportsView } from '../views/ReportsView';
 import { SettingsView } from '../views/SettingsView';
 import { BusinessIntelligenceScreen } from '../BusinessIntelligenceScreen';
+import { ShiftAnalyticsPage } from '../ShiftAnalyticsPage';
 import { 
   loadStoredProducts, 
   saveStoredProducts, 
@@ -134,6 +135,13 @@ export const TAB_METADATA: Record<ActiveTab, {
     statusMessage: 'Módulo pronto. Análise de desempenho comercial, curva ABC e exportação SAF-T AO.',
     icon: BarChart3,
     phase: 'Fase 1 • Operacional',
+  },
+  audit: {
+    title: 'Auditoria & Quebras',
+    subtitle: 'Desempenho de operadores, motivos de divergência e controle de quebras/sobras',
+    statusMessage: 'Módulo pronto. Análise de quebras por motivo, impacto financeiro (Kz) e auditoria de caixas.',
+    icon: ShieldCheck,
+    phase: 'Fase 1 • Auditoria Ativa',
   },
   settings: {
     title: 'Configurações',
@@ -412,6 +420,10 @@ export const AppShell: React.FC<AppShellProps> = ({
             sales={sales}
             products={products}
           />
+        );
+      case 'audit':
+        return (
+          <ShiftAnalyticsPage />
         );
       case 'settings':
         return (

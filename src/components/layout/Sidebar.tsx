@@ -84,6 +84,12 @@ export const MAIN_NAV_ITEMS: SidebarNavOption[] = [
     icon: BarChart3,
   },
   {
+    id: 'audit',
+    label: 'Auditoria & Quebras',
+    tooltip: 'Desempenho de Caixa, Quebras & Motivos de Auditoria',
+    icon: ShieldCheck,
+  },
+  {
     id: 'ai_engine',
     label: 'Masakula AI',
     tooltip: 'Diagnóstico Preditivo & Inteligência Artificial',

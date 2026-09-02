@@ -626,4 +626,73 @@ export const supabaseService = {
       return false;
     }
   },
+
+  async approveStockAudit(auditId: string, userId?: string): Promise<{ data: any | null; error: Error | null; success: boolean }> {
+    try {
+      let effectiveUserId = userId;
+      if (!effectiveUserId) {
+        try {
+          const { data: userData } = await supabase.auth.getUser();
+          effectiveUserId = userData.user?.id || '00000000-0000-0000-0000-000000000000';
+        } catch {
+          effectiveUserId = '00000000-0000-0000-0000-000000000000';
+        }
+      }
+
+      const { data, error } = await supabase.rpc('approve_stock_audit', {
+        p_audit_id: auditId,
+        p_user_id: effectiveUserId,
+      });
+
+      if (error) {
+        console.error('Erro na aprovação da auditoria de estoque:', error.message);
+        return { data: null, error: new Error(error.message), success: false };
+      }
+
+      console.log('Auditoria regularizada com sucesso:', data);
+      return { data, error: null, success: true };
+    } catch (err: any) {
+      console.error('Falha inesperada ao executar approve_stock_audit:', err);
+      return {
+        data: null,
+        error: err instanceof Error ? err : new Error(String(err)),
+        success: false,
+      };
+    }
+  },
+
+  async getMonthlyBreakageSummaryByReason(storeId?: string, periodMonth?: string) {
+    try {
+      const defaultMonth = new Date().toISOString().slice(0, 7) + '-01';
+      const period = periodMonth || defaultMonth;
+
+      let query = supabase
+        .from('v_monthly_breakage_summary_by_reason')
+        .select('*')
+        .order('total_amount_lost', { ascending: false });
+
+      if (storeId) {
+        query = query.eq('store_id', storeId);
+      }
+
+      if (period) {
+        query = query.eq('period_month', period);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        console.error('Erro ao consultar v_monthly_breakage_summary_by_reason:', error.message);
+        return { data: null, error: new Error(error.message), success: false };
+      }
+
+      return { data, error: null, success: true };
+    } catch (err: any) {
+      console.error('Falha inesperada ao obter resumo de quebras por motivo:', err);
+      return {
+        data: null,
+        error: err instanceof Error ? err : new Error(String(err)),
+        success: false,
+      };
+    }
+  },
 };

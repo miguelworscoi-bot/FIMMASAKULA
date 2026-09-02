@@ -199,17 +199,17 @@ export default function ShiftHistoryPage() {
 
       {/* MODAL DETALHADO DO DIÁRIO DO TURNO */}
       {selectedShift && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-neutral-900 border border-neutral-800 w-full max-w-2xl rounded-3xl p-6 space-y-6 shadow-2xl">
-            <div className="flex justify-between items-start border-b border-neutral-800 pb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white border border-zinc-200 w-full max-w-2xl rounded-3xl p-6 space-y-6 shadow-2xl">
+            <div className="flex justify-between items-start border-b border-zinc-200 pb-4">
               <div>
-                <h3 className="text-lg font-bold text-white">Detalhamento do Turno #{selectedShift.id}</h3>
-                <p className="text-xs text-neutral-400">Operador: {selectedShift.operatorName} | Terminal: {selectedShift.terminalId}</p>
+                <h3 className="text-lg font-bold text-zinc-900">Detalhamento do Turno #{selectedShift.id}</h3>
+                <p className="text-xs text-zinc-500">Operador: {selectedShift.operatorName} | Terminal: {selectedShift.terminalId}</p>
               </div>
               <button 
                 type="button"
                 onClick={() => setSelectedShift(null)}
-                className="text-xs bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white px-3 py-1.5 rounded-lg transition cursor-pointer"
+                className="text-xs bg-zinc-100 hover:bg-zinc-200 text-zinc-700 hover:text-zinc-900 px-3 py-1.5 rounded-lg transition cursor-pointer font-semibold"
               >
                 Fechar
               </button>
@@ -217,48 +217,48 @@ export default function ShiftHistoryPage() {
 
             {/* RESUMO MÉTODOS DE PAGAMENTO */}
             <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-              <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-800">
-                <span className="text-neutral-500 block mb-1">Vendas em Dinheiro</span>
-                <span className="text-base text-white font-bold">{selectedShift.salesCash.toLocaleString("pt-AO")} Kz</span>
+              <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200">
+                <span className="text-zinc-500 block mb-1">Vendas em Dinheiro</span>
+                <span className="text-base text-zinc-900 font-bold">{selectedShift.salesCash.toLocaleString("pt-AO")} Kz</span>
               </div>
-              <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-800">
-                <span className="text-neutral-500 block mb-1">Vendas Multicaixa (TPA)</span>
-                <span className="text-base text-indigo-400 font-bold">{selectedShift.salesCard.toLocaleString("pt-AO")} Kz</span>
+              <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200">
+                <span className="text-zinc-500 block mb-1">Vendas Multicaixa (TPA)</span>
+                <span className="text-base text-indigo-600 font-bold">{selectedShift.salesCard.toLocaleString("pt-AO")} Kz</span>
               </div>
             </div>
 
             {/* HISTÓRICO DE SANGRIA E REFORÇO */}
             <div>
-              <h4 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">
+              <h4 className="text-xs font-semibold text-zinc-600 uppercase tracking-wider mb-3">
                 Movimentos de Caixa (Sangrias / Reforços)
               </h4>
               {selectedShift.movements.length === 0 ? (
-                <p className="text-xs text-neutral-500 italic">Sem movimentos registados neste turno.</p>
+                <p className="text-xs text-zinc-400 italic">Sem movimentos registados neste turno.</p>
               ) : (
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                   {selectedShift.movements.map((mov) => (
                     <div 
                       key={mov.id} 
-                      className="flex justify-between items-center p-3 bg-neutral-950 border border-neutral-800/80 rounded-xl text-xs"
+                      className="flex justify-between items-center p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs"
                     >
                       <div className="flex items-center gap-3">
                         {mov.type === "SANGRIA" ? (
-                          <span className="p-1.5 bg-rose-500/10 text-rose-400 rounded-lg">
+                          <span className="p-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg">
                             <ArrowDownRight className="w-4 h-4" />
                           </span>
                         ) : (
-                          <span className="p-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg">
+                          <span className="p-1.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg">
                             <ArrowUpRight className="w-4 h-4" />
                           </span>
                         )}
                         <div>
-                          <div className="font-semibold text-white">{mov.reason}</div>
-                          <div className="text-[10px] text-neutral-500">
+                          <div className="font-semibold text-zinc-900">{mov.reason}</div>
+                          <div className="text-[10px] text-zinc-400">
                             {new Date(mov.timestamp).toLocaleTimeString("pt-AO")} • Resp: {mov.operatorName}
                           </div>
                         </div>
                       </div>
-                      <span className={`font-mono font-bold ${mov.type === "SANGRIA" ? "text-rose-400" : "text-emerald-400"}`}>
+                      <span className={`font-mono font-bold ${mov.type === "SANGRIA" ? "text-rose-600" : "text-emerald-600"}`}>
                         {mov.type === "SANGRIA" ? "-" : "+"}{mov.amount.toLocaleString("pt-AO")} Kz
                       </span>
                     </div>

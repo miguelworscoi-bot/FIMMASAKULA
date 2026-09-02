@@ -44,6 +44,9 @@ export { default as AuditAndSecurityScreen, AuditAndSecurityScreen as AuditAndSe
 export { generateIntelligencePDF, type IntelligenceReportData } from '../utils/exportPdf';
 export { useDeadStock, type DeadStockItem } from '../hooks/useDeadStock';
 export { usePermissions, type UserRole as PermissionsUserRole, type UserProfile as PermissionsUserProfile } from '../hooks/usePermissions';
+export { BreakageSummaryCharts } from './BreakageSummaryCharts';
+export { CategoryFolderCard, type CategoryFolderProps, type ProductItem } from './CategoryFolderCard';
+export { CategoriesSubscreenPage } from './CategoriesSubscreenPage';
 export { SettingsView } from './views/SettingsView';
 export { DashboardView } from './views/DashboardView';
 
@@ -54,6 +57,10 @@ export { DashboardView } from './views/DashboardView';
 export { supabase } from '../lib/supabase';
 export { supabaseAdmin } from '../lib/supabase/admin';
 export { supabaseService } from '../services/supabaseService';
+export { approveStockAudit } from '../services/stockAuditService';
+export { getBreakageSummaryByReason, DIVERGENCE_REASON_LABELS, REASON_CONFIG } from '../services/breakageService';
+export type { DivergenceReason, BreakageReasonSummary } from '../services/breakageService';
+export { useBreakageSummary } from '../hooks/useBreakageSummary';
 export { productService } from '../services/productService';
 export { tauriHardwareService, isTauriEnvironment } from '../services/tauriHardwareService';
 export type { SerialPortInfo, SerialResponse, PrintReceiptOptions } from '../services/tauriHardwareService';
