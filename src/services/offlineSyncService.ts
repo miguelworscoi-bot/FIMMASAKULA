@@ -1,4 +1,5 @@
 import { offlineDb, type OfflineSale } from "@/lib/db/offlineDb";
+import { db, type LocalPendingSale } from "@/lib/db/posDatabase";
 import { createClient } from "@/lib/supabase/client";
 
 /** Guarda a venda no IndexedDB local. */
@@ -129,4 +130,59 @@ export async function syncPendingSalesWithStockCheck(): Promise<void> {
       console.error(`Falha ao sincronizar venda #${sale.id}:`, error);
     }
   }
+}
+
+/** Regista uma venda localmente e inicia a sincronização em segundo plano. */
+export async function registerLocalSale(
+  saleData: Omit<LocalPendingSale, "synced">
+): Promise<string> {
+  const newSale: LocalPendingSale = {
+    ...saleData,
+    synced: 0,
+  };
+
+  await db.pendingSales.add(newSale);
+
+  if (typeof navigator !== "undefined" && navigator.onLine) {
+    void syncPendingSalesBatch();
+  }
+
+  return newSale.client_sale_id;
+}
+
+/** Sincroniza vendas locais em lote através da RPC do Supabase. */
+export async function syncPendingSalesBatch(): Promise<void> {
+  if (typeof navigator === "undefined" || !navigator.onLine) return;
+
+  const pending = await db.pendingSales.where("synced").equals(0).toArray();
+  if (pending.length === 0) return;
+
+  const supabase = createClient();
+
+  try {
+    const { data, error } = await supabase.rpc("sync_offline_sales", {
+      p_sales: pending,
+    });
+
+    if (error) throw error;
+
+    if (Array.isArray(data)) {
+      const syncedIds = data
+        .filter((result) => result.status === "synced" || result.status === "already_exists")
+        .map((result) => result.client_sale_id)
+        .filter((id): id is string => typeof id === "string");
+
+      if (syncedIds.length > 0) {
+        await db.pendingSales.bulkDelete(syncedIds);
+      }
+    }
+  } catch (error) {
+    console.error("Falha na sincronização em lote. Retentando na próxima conexão:", error);
+  }
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("online", () => {
+    void syncPendingSalesBatch();
+  });
 }

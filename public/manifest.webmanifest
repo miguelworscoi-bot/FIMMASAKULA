@@ -1,0 +1,10 @@
+{
+  "name": "Worscoi POS - Ponto de Venda",
+  "short_name": "Worscoi POS",
+  "description": "Sistema de Gestão Comercial e Ponto de Venda Offline",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#131313",
+  "theme_color": "#E1FB15",
+  "orientation": "any"
+}

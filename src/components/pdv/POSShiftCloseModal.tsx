@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
-import { DollarSign, CreditCard, ArrowRightLeft, Lock } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
+import { DollarSign, CreditCard, ArrowRightLeft, Lock, AlertTriangle, RefreshCw } from "lucide-react";
 import { calculateShiftSummary } from "@/services/shiftService";
+import { db } from "@/lib/db/posDatabase";
+import { syncPendingSalesBatch } from "@/services/offlineSyncService";
 import type { PaymentBreakdown, ShiftSummary } from "@/types/shift";
 
 interface POSShiftCloseModalProps {
@@ -31,6 +34,28 @@ export function POSShiftCloseModal({
     total: 0,
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+
+  const pendingSalesCount = useLiveQuery(
+    () => db.pendingSales.where("synced").equals(0).count(),
+    [],
+    0
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    setIsOnline(navigator.onLine);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   if (!isOpen) return null;
 
@@ -80,6 +105,28 @@ export function POSShiftCloseModal({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {pendingSalesCount > 0 && (
+            <div className="mb-4 flex items-center justify-between rounded-2xl border border-[#E1FB15]/30 bg-[#E1FB15]/10 p-3.5 text-xs text-[#E1FB15]">
+              <div className="flex items-center gap-2.5">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <span>
+                  Existem <strong>{pendingSalesCount} vendas offline</strong> pendentes no equipamento.
+                </span>
+              </div>
+
+              {isOnline && (
+                <button
+                  type="button"
+                  onClick={() => void syncPendingSalesBatch()}
+                  className="flex items-center gap-1.5 rounded-xl bg-[#E1FB15] px-3 py-1.5 text-xs font-extrabold text-black transition hover:bg-[#c9e20e]"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  Sincronizar Agora
+                </button>
+              )}
+            </div>
+          )}
+
           {[
             {
               field: "numerario" as const,
@@ -132,10 +179,14 @@ export function POSShiftCloseModal({
             </button>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || (pendingSalesCount > 0 && !isOnline)}
               className="w-1/2 rounded-2xl bg-[#32D583] py-3 text-xs font-extrabold text-black transition hover:bg-[#28c072] disabled:opacity-50"
             >
-              {isLoading ? "A Calcular..." : "Confirmar & Gerar Relatório Z"}
+              {pendingSalesCount > 0 && !isOnline
+                ? "Ligue à Internet para Sincronizar e Fechar"
+                : isLoading
+                  ? "A Calcular..."
+                  : "Confirmar & Gerar Relatório Z"}
             </button>
           </div>
         </form>

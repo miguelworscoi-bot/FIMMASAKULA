@@ -1,4 +1,5 @@
 import { offlineDb, type CachedCategory, type CachedProduct } from "@/lib/db/offlineDb";
+import { db, type CachedProduct as PosCachedProduct } from "@/lib/db/posDatabase";
 import { createClient } from "@/lib/supabase/client";
 
 interface SupabaseProductRow {
@@ -89,4 +90,45 @@ export async function decrementLocalStock(
       }
     }
   });
+}
+
+/** Atualiza o cache POS local com o catálogo ativo do Supabase. */
+export async function syncProductCatalogToOffline(): Promise<number> {
+  if (typeof navigator === "undefined" || !navigator.onLine) {
+    return db.cachedProducts.count();
+  }
+
+  const supabase = createClient();
+  const { data: products, error } = await supabase
+    .from("products")
+    .select("id, name, price, stock_quantity, barcode")
+    .eq("is_active", true);
+
+  if (error) {
+    console.error("Erro ao descarregar catálogo:", error);
+    return db.cachedProducts.count();
+  }
+
+  if (products && products.length > 0) {
+    await db.transaction("rw", db.cachedProducts, async () => {
+      await db.cachedProducts.clear();
+      await db.cachedProducts.bulkAdd(products as PosCachedProduct[]);
+    });
+  }
+
+  return products?.length ?? 0;
+}
+
+/** Procura um produto por código de barras exato ou por nome no cache local. */
+export async function searchLocalProduct(term: string): Promise<PosCachedProduct[]> {
+  const normalizedTerm = term.trim();
+  if (!normalizedTerm) return [];
+
+  const byBarcode = await db.cachedProducts.where("barcode").equals(normalizedTerm).toArray();
+  if (byBarcode.length > 0) return byBarcode;
+
+  const lowerTerm = normalizedTerm.toLowerCase();
+  return db.cachedProducts
+    .filter((product) => product.name.toLowerCase().includes(lowerTerm))
+    .toArray();
 }

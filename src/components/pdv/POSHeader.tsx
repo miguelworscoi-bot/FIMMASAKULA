@@ -1,29 +1,19 @@
 "use client";
 
 import React from "react";
-import { User, Store } from "lucide-react";
-import { POSNetworkBadge } from "./POSNetworkBadge";
+import { SyncStatusBadge } from "./SyncStatusBadge";
 
-export function POSHeader() {
+export function POSHeader({ operatorName }: { operatorName: string }) {
   return (
-    <header className="flex items-center justify-between border-b border-white/10 bg-[#0b0b0b] px-6 py-3 text-white">
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#32D583]/10 text-[#32D583]">
-            <Store className="h-4 w-4" />
-          </div>
-          <span className="text-sm font-extrabold tracking-wide">WORSCOI POS</span>
-        </div>
-
-        <div className="hidden items-center gap-2 border-l border-white/10 pl-4 text-xs text-gray-400 sm:flex">
-          <User className="h-3.5 w-3.5" />
-          <span>
-            Operador: <strong>Miguel António</strong>
-          </span>
-        </div>
+    <header className="flex h-16 w-full items-center justify-between border-b border-white/10 bg-[#131313] px-6 text-white">
+      <div className="flex items-center gap-3">
+        <h1 className="text-base font-extrabold tracking-wider text-white">
+          WORSCOI<span className="text-[#E1FB15]">.POS</span>
+        </h1>
+        <span className="text-xs text-gray-500">| Operador: {operatorName}</span>
       </div>
 
-      <POSNetworkBadge />
+      <SyncStatusBadge />
     </header>
   );
 }
