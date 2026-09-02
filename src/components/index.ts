@@ -24,9 +24,14 @@ export { RoleGuard } from './RoleGuard';
 // View Submodules & Modals
 export { ProductsView } from './views/ProductsView';
 export { default as ProductsPage, ProductsPage as MasakulaProductsPage } from '../screens/ProductsPage';
+export { default as POSPage } from '../screens/POSPage';
 export { StockModal } from './views/StockModal';
 export { ServiceOrdersView, WorkOrdersView } from './views/ServiceOrdersView';
 export { PosView } from './views/PosView';
+export { POSCartSidebar } from './pdv/POSCartSidebar';
+export { POSCheckoutModal } from './pdv/POSCheckoutModal';
+export { ReceiptTemplate, type SaleReceiptData } from './pdv/ReceiptTemplate';
+export { POSSuccessActions } from './pdv/POSSuccessActions';
 export { ThermalReceipt } from './ThermalReceipt';
 export { CustomersView } from './views/CustomersView';
 export { ReportsView } from './views/ReportsView';
