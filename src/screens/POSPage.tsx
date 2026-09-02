@@ -1,50 +1,21 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { Search, Package } from "lucide-react";
 import { POSProduct, CartItem, PaymentMethod } from "@/types/pos";
 import { POSCartSidebar } from "../components/pdv/POSCartSidebar";
 import { POSCheckoutModal } from "../components/pdv/POSCheckoutModal";
 import { saveSaleOffline } from "@/services/offlineSyncService";
+import { decrementLocalStock } from "@/services/productCacheService";
 import { createClient } from "@/lib/supabase/client";
-
-const MOCK_PRODUCTS: POSProduct[] = [
-  { id: "1", name: "Água Mineral 1.5L", price: 500, stock: 45, categoryId: "cat1", categoryName: "Bebidas", categoryColor: "#06B6D4" },
-  { id: "2", name: "Sumo Compal Laranja 1L", price: 1200, stock: 18, categoryId: "cat1", categoryName: "Bebidas", categoryColor: "#06B6D4" },
-  { id: "3", name: "Café Expresso", price: 400, stock: 100, categoryId: "cat2", categoryName: "Alimentação", categoryColor: "#F59E0B" },
-  { id: "4", name: "Sanduíche Mista", price: 1500, stock: 12, categoryId: "cat2", categoryName: "Alimentação", categoryColor: "#F59E0B" },
-];
+import { useCachedProducts } from "@/hooks/useCachedProducts";
 
 export default function POSPage() {
-  const [products] = useState<POSProduct[]>(MOCK_PRODUCTS);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-
-  const categories = useMemo(() => {
-    return Array.from(
-      new Map(
-        products
-          .filter((product) => product.categoryId)
-          .map((product) => [product.categoryId, {
-            id: product.categoryId as string,
-            name: product.categoryName ?? "Sem categoria",
-            color: product.categoryColor ?? "#32D583",
-          }])
-      ).values()
-    );
-  }, [products]);
-
-  const filteredProducts = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
-    return products.filter((product) => {
-      const matchesSearch = product.name.toLowerCase().includes(normalizedSearch)
-        || product.barcode?.includes(normalizedSearch);
-      const matchesCategory = selectedCategory === null || product.categoryId === selectedCategory;
-      return matchesSearch && matchesCategory;
-    });
-  }, [products, searchTerm, selectedCategory]);
+  const { products, categories } = useCachedProducts(searchTerm, selectedCategory);
 
   const handleAddToCart = (product: POSProduct) => {
     if (product.stock <= 0) return;
@@ -73,6 +44,10 @@ export default function POSPage() {
   };
 
   const handleConfirmSale = async (method: PaymentMethod, paid: number, change: number) => {
+    await decrementLocalStock(
+      cart.map((item) => ({ productId: item.product.id, quantity: item.quantity }))
+    );
+
     const salePayload = {
       tempId: crypto.randomUUID(),
       items: cart.map((item) => ({
@@ -164,7 +139,7 @@ export default function POSPage() {
               onClick={() => setSelectedCategory(category.id)}
               className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-semibold transition ${selectedCategory === category.id ? "bg-[#32D583] font-bold text-black" : "border border-white/10 bg-[#131313] text-gray-300 hover:bg-white/5"}`}
             >
-              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: category.color }} />
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: category.colorHex }} />
               {category.name}
             </button>
           ))}
