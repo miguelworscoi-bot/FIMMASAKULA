@@ -5,6 +5,8 @@ import { Search, Package } from "lucide-react";
 import { POSProduct, CartItem, PaymentMethod } from "@/types/pos";
 import { POSCartSidebar } from "../components/pdv/POSCartSidebar";
 import { POSCheckoutModal } from "../components/pdv/POSCheckoutModal";
+import { saveSaleOffline } from "@/services/offlineSyncService";
+import { createClient } from "@/lib/supabase/client";
 
 const MOCK_PRODUCTS: POSProduct[] = [
   { id: "1", name: "Água Mineral 1.5L", price: 500, stock: 45, categoryId: "cat1", categoryName: "Bebidas", categoryColor: "#06B6D4" },
@@ -71,7 +73,61 @@ export default function POSPage() {
   };
 
   const handleConfirmSale = async (method: PaymentMethod, paid: number, change: number) => {
-    console.log("Venda efetuada:", { cart, method, paid, change });
+    const salePayload = {
+      tempId: crypto.randomUUID(),
+      items: cart.map((item) => ({
+        productId: item.product.id,
+        name: item.product.name,
+        quantity: item.quantity,
+        price: item.product.price,
+        subtotal: item.subtotal,
+      })),
+      totalAmount,
+      paymentMethod: method,
+      amountPaid: paid,
+      change,
+      createdAt: new Date().toISOString(),
+    };
+
+    if (!navigator.onLine) {
+      await saveSaleOffline(salePayload);
+      window.alert("Venda gravada em modo offline. Será sincronizada automaticamente.");
+    } else {
+      try {
+        const supabase = createClient();
+        const { data: insertedSale, error: saleError } = await supabase
+          .from("sales")
+          .insert({
+            total_amount: salePayload.totalAmount,
+            payment_method: salePayload.paymentMethod,
+            amount_paid: salePayload.amountPaid,
+            change_amount: salePayload.change,
+            created_at: salePayload.createdAt,
+          })
+          .select("id")
+          .single();
+
+        if (saleError) throw saleError;
+
+        const { error: itemsError } = await supabase.from("sale_items").insert(
+          salePayload.items.map((item) => ({
+            sale_id: insertedSale.id,
+            product_id: item.productId,
+            quantity: item.quantity,
+            unit_price: item.price,
+            subtotal: item.subtotal,
+          }))
+        );
+
+        if (itemsError) throw itemsError;
+        window.alert("Venda registada com sucesso!");
+      } catch (error) {
+        console.error("Falha ao enviar venda online:", error);
+        await saveSaleOffline(salePayload);
+        window.alert("Falha de rede. Venda guardada localmente para sincronização.");
+      }
+    }
+
     setCart([]);
     setIsCheckoutOpen(false);
   };

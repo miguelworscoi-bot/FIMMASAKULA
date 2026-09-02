@@ -32,6 +32,8 @@ export { POSCartSidebar } from './pdv/POSCartSidebar';
 export { POSCheckoutModal } from './pdv/POSCheckoutModal';
 export { ReceiptTemplate, type SaleReceiptData } from './pdv/ReceiptTemplate';
 export { POSSuccessActions } from './pdv/POSSuccessActions';
+export { POSNetworkBadge } from './pdv/POSNetworkBadge';
+export { POSHeader } from './pdv/POSHeader';
 export { ThermalReceipt } from './ThermalReceipt';
 export { CustomersView } from './views/CustomersView';
 export { ReportsView } from './views/ReportsView';
