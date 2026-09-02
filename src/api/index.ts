@@ -35,12 +35,3 @@ export {
   expressCloseShiftHandler,
 } from './shiftClose';
 
-export {
-  expressSendAuditEmailHandler,
-  expressSendShiftReportZEmailHandler,
-  sendAuditReportEmail,
-  sendShiftReportZEmail,
-} from './email';
-
-
-

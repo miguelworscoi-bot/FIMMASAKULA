@@ -24,6 +24,7 @@ export type ActiveTab =
   | 'goals'
   | 'attendance'
   | 'reports'
+  | 'admin'
   | 'settings'
   | 'ai_engine';
 

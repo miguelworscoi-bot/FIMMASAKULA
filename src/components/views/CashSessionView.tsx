@@ -18,12 +18,15 @@ import {
   Building2,
   Calendar,
   Layers,
-  Sparkles
+  Sparkles,
+  ShieldCheck,
+  KeyRound
 } from 'lucide-react';
 import { CashSession, CashMovement } from '../../types';
 import { formatKz, formatDate, formatTime } from '../../utils/formatters';
 import { supabaseService } from '../../services/supabaseService';
 import { supabase } from '../../lib/supabase';
+import { SecureCashCloseModal } from '../auth/SecureCashCloseModal';
 
 interface CashSessionViewProps {
   activeSession: CashSession | null;
@@ -47,6 +50,7 @@ export const CashSessionView: React.FC<CashSessionViewProps> = ({
 
   // Fechamento & Conferência
   const [isClosingModalOpen, setIsClosingModalOpen] = useState(false);
+  const [isSecurityVerificationOpen, setIsSecurityVerificationOpen] = useState(false);
   const [actualCashInput, setActualCashInput] = useState<number>(0);
   const [closingNotes, setClosingNotes] = useState<string>('');
 
@@ -184,9 +188,15 @@ export const CashSessionView: React.FC<CashSessionViewProps> = ({
     supabaseService.updateCashSessionExpected(activeSession.id, newExpected).catch(err => console.warn(err));
   };
 
-  // 3. Fechamento de Caixa & Apuração de Quebra / Sobra
-  const handleCloseSession = async (e: React.FormEvent) => {
+  // 3. Solicitação de Fechamento de Caixa (Abre Verificação Segura de PIN/Senha)
+  const handleCloseSession = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!activeSession) return;
+    setIsSecurityVerificationOpen(true);
+  };
+
+  // 4. Conclusão Final do Fechamento de Caixa após PIN/Senha Validado
+  const handleFinalizeCashClose = async (verificationData: { method: "PIN" | "PASSWORD"; verifiedBy: string; timestamp: string }) => {
     if (!activeSession) return;
 
     const counted = Number(actualCashInput) || 0;
@@ -198,18 +208,19 @@ export const CashSessionView: React.FC<CashSessionViewProps> = ({
       actual_cash: counted,
       difference: diff,
       status: 'CLOSED',
-      closed_at: new Date().toISOString(),
-      notes: closingNotes || null
+      closed_at: verificationData.timestamp,
+      notes: `${closingNotes ? closingNotes + ' | ' : ''}Validado via ${verificationData.method} por ${verificationData.verifiedBy}`,
     };
 
     setActiveSession(null);
     setMovements([]);
+    setIsSecurityVerificationOpen(false);
     setIsClosingModalOpen(false);
 
-    let statusText = 'Caixa balanceado exato!';
-    if (diff > 0) statusText = `Fechamento concluído com SOBRA de +${formatKz(diff)}.`;
-    if (diff < 0) statusText = `Fechamento concluído com QUEBRA de -${formatKz(Math.abs(diff))}.`;
-    showToast(statusText);
+    let statusText = 'Caixa balanceado e encerrado com sucesso!';
+    if (diff > 0) statusText = `Fechamento validado com SOBRA de +${formatKz(diff)}.`;
+    if (diff < 0) statusText = `Fechamento validado com QUEBRA de -${formatKz(Math.abs(diff))}.`;
+    showToast(`🔒 ${statusText} (Autenticado por ${verificationData.verifiedBy})`);
 
     supabaseService.closeCashSession(activeSession.id, counted, diff).catch(err => console.warn(err));
   };
@@ -637,6 +648,16 @@ export const CashSessionView: React.FC<CashSessionViewProps> = ({
                 />
               </div>
 
+              <div className="p-3 bg-zinc-900 text-white rounded-2xl flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <KeyRound size={16} className="text-[#E1FB15]" />
+                  <span className="font-bold text-xs">Exigência de Segurança:</span>
+                </div>
+                <span className="text-[11px] font-semibold text-zinc-300">
+                  Validação de PIN / Senha no encerramento
+                </span>
+              </div>
+
               <div className="pt-2 flex justify-end gap-2 border-t border-gray-100">
                 <button
                   type="button"
@@ -650,12 +671,30 @@ export const CashSessionView: React.FC<CashSessionViewProps> = ({
                   className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black shadow-md transition cursor-pointer flex items-center gap-1.5"
                 >
                   <Lock size={15} />
-                  <span>Encerrar Sessão</span>
+                  <span>Validar & Encerrar Sessão</span>
                 </button>
               </div>
             </form>
           </div>
         </div>
+      )}
+
+      {/* ==========================================
+          MODAL: CONFIRMAÇÃO DE PIN / SENHA (SEGURANÇA)
+          ========================================== */}
+      {isSecurityVerificationOpen && activeSession && (
+        <SecureCashCloseModal
+          isOpen={isSecurityVerificationOpen}
+          operatorName={activeSession.operator_name || 'Operador de Caixa'}
+          operatorId={activeSession.id}
+          terminalName="Terminal Principal (PDV-01)"
+          countedAmount={Number(actualCashInput) || 0}
+          expectedAmount={Number(activeSession.expected_cash) || 0}
+          differenceAmount={(Number(actualCashInput) || 0) - (Number(activeSession.expected_cash) || 0)}
+          notes={closingNotes}
+          onSuccess={handleFinalizeCashClose}
+          onCancel={() => setIsSecurityVerificationOpen(false)}
+        />
       )}
     </div>
   );

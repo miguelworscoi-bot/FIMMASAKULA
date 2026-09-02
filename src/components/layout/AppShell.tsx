@@ -31,6 +31,7 @@ import { CustomersView } from '../views/CustomersView';
 import { GoalsView } from '../views/GoalsView';
 import { ReportsView } from '../views/ReportsView';
 import { SettingsView } from '../views/SettingsView';
+import { AdminDashboardView } from '../views/AdminDashboardView';
 import { BusinessIntelligenceScreen } from '../BusinessIntelligenceScreen';
 import { 
   loadStoredProducts, 
@@ -134,6 +135,13 @@ export const TAB_METADATA: Record<ActiveTab, {
     statusMessage: 'Módulo pronto. Análise de desempenho comercial, curva ABC e exportação SAF-T AO.',
     icon: BarChart3,
     phase: 'Fase 1 • Operacional',
+  },
+  admin: {
+    title: 'Painel Administrativo',
+    subtitle: 'Métricas globais de vendas, gestão de utilizadores e configurações da empresa',
+    statusMessage: 'Módulo de Gestão Executiva Centralizada e Segurança Operacional.',
+    icon: ShieldCheck,
+    phase: 'Fase 1 • Gestão Centralizada',
   },
   settings: {
     title: 'Configurações',
@@ -411,6 +419,19 @@ export const AppShell: React.FC<AppShellProps> = ({
           <ReportsView
             sales={sales}
             products={products}
+          />
+        );
+      case 'admin':
+        return (
+          <AdminDashboardView
+            sales={sales}
+            products={products}
+            expenses={expenses}
+            cashSessions={activeCashSession ? [activeCashSession] : []}
+            settings={settings}
+            setSettings={setSettings}
+            userSession={userSession}
+            onNavigateToTab={(tab) => setActiveTab(tab as ActiveTab)}
           />
         );
       case 'settings':

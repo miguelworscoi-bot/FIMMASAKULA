@@ -19,6 +19,8 @@ import {
   ChevronRight,
   RotateCcw,
   Info,
+  ShieldCheck,
+  UserCheck,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
@@ -27,19 +29,7 @@ import { supabase } from '../../lib/supabase';
 import { CreateGoalModal, NewGoalDTO } from '../admin/CreateGoalModal';
 import { AttendanceStatsModule } from './AttendanceStatsView';
 import { BrushStroke } from '../ui/BrushStroke';
-
-export interface GoalItem {
-  id: string;
-  title: string;
-  type: 'SALES' | 'PROFIT' | 'BOTH';
-  attendantId: string;
-  attendantName: string;
-  targetAmount: number;
-  currentAmount: number;
-  dueDate: string;
-  createdAt: string;
-  notes?: string;
-}
+import { useOperatorGoals, GoalItem } from '../../hooks/useOperatorGoals';
 
 // Nomes em Português para datas
 const WEEKDAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -200,11 +190,25 @@ export const GoalsView: React.FC<GoalsViewProps> = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Lista dinâmica de Metas
-  const [goals, setGoals] = useState<GoalItem[]>(INITIAL_GOALS);
+  // Hook de Metas Restrito ao Operador Logado
+  const {
+    goals,
+    setGoals,
+    isCloudSyncing,
+    currentOperator,
+    isRestrictedToSelf,
+    operatorSalesTotal,
+    refetchGoals,
+  } = useOperatorGoals(selectedAttendant);
+
   const [selectedGoalId, setSelectedGoalId] = useState<string>('goal-1');
   const [goalsFilter, setGoalsFilter] = useState<'ALL' | 'IN_PROGRESS' | 'COMPLETED'>('ALL');
-  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
+
+  useEffect(() => {
+    if (goals.length > 0 && !goals.some((g) => g.id === selectedGoalId)) {
+      setSelectedGoalId(goals[0].id);
+    }
+  }, [goals, selectedGoalId]);
 
   // Objeto do dia selecionado
   const selectedDayInfo = useMemo(() => {
@@ -237,38 +241,6 @@ export const GoalsView: React.FC<GoalsViewProps> = () => {
     };
   }, [calendarDays, selectedDayKey]);
 
-  // Sincronização inicial com Supabase
-  useEffect(() => {
-    async function loadMetasFromSupabase() {
-      try {
-        setIsCloudSyncing(true);
-        const { data, error } = await supabase.from('metas').select('*').order('created_at', { ascending: false });
-        if (!error && data && data.length > 0) {
-          const mappedGoals: GoalItem[] = data.map((item: any) => ({
-            id: item.id ? String(item.id) : `goal-${Date.now()}`,
-            title: item.title || 'Meta na Nuvem',
-            type: (item.type || 'BOTH') as 'SALES' | 'PROFIT' | 'BOTH',
-            attendantId: item.attendant_id || 'TODOS',
-            attendantName: item.attendant_name || 'Todas as Atendentes',
-            targetAmount: Number(item.target_amount) || 0,
-            currentAmount: Number(item.current_amount) || 0,
-            dueDate: item.due_date || new Date().toISOString().split('T')[0],
-            createdAt: item.created_at ? item.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
-            notes: item.notes || `Período: ${item.period || 'monthly'}`,
-          }));
-          setGoals(mappedGoals);
-          setSelectedGoalId(mappedGoals[0].id);
-        }
-      } catch (err) {
-        console.warn('Supabase fetch fallback to local INITIAL_GOALS:', err);
-      } finally {
-        setIsCloudSyncing(false);
-      }
-    }
-
-    loadMetasFromSupabase();
-  }, []);
-
   // Meta ativa atualmente no Painel / Hero
   const activeGoal = useMemo(() => {
     return goals.find((g) => g.id === selectedGoalId) || goals[0] || INITIAL_GOALS[0];
@@ -283,7 +255,7 @@ export const GoalsView: React.FC<GoalsViewProps> = () => {
         totalLucro: 0,
         margem: 0,
         highlightAttendant: {
-          name: 'Nenhum registro',
+          name: isRestrictedToSelf ? currentOperator.name : 'Nenhum registro',
           role: 'Data futura',
           note: 'Aguardando abertura de vendas deste dia',
           current: 0,
@@ -298,45 +270,71 @@ export const GoalsView: React.FC<GoalsViewProps> = () => {
           { time: '18:00', sales: 0, profit: 0 },
           { time: '20:00', sales: 0, profit: 0 },
         ],
-        teamRanking: [
-          { id: 'maria', name: 'Maria Silva', role: 'Atendente Sénior', current: 0, target: 350000 },
-          { id: 'joao', name: 'João Pedro', role: 'Atendente', current: 0, target: 300000 },
-          { id: 'ana', name: 'Ana Cardoso', role: 'Atendente', current: 0, target: 250000 },
-        ],
+        teamRanking: isRestrictedToSelf
+          ? [{ id: currentOperator.id, name: currentOperator.name, role: currentOperator.role, current: 0, target: activeGoal.targetAmount }]
+          : [
+              { id: 'maria', name: 'Maria Silva', role: 'Atendente Sénior', current: 0, target: 350000 },
+              { id: 'joao', name: 'João Pedro', role: 'Atendente', current: 0, target: 300000 },
+              { id: 'ana', name: 'Ana Cardoso', role: 'Atendente', current: 0, target: 250000 },
+            ],
         isFutureDay: true,
         label: `Dia Futuro (${selectedDayInfo.fullFormatted})`,
       };
     }
 
-    // 2. DIA DE HOJE: RESULTADOS REAIS E ATUAIS
+    // 2. DIA DE HOJE: RESULTADOS REAIS E ATUAIS (COM DADOS DO OPERADOR SE RESTRITO)
     if (selectedDayInfo.isToday) {
+      const selfSales = operatorSalesTotal > 0 ? operatorSalesTotal : activeGoal.currentAmount;
+      const selfProfit = Math.round(selfSales * 0.4);
+      const selfPct = activeGoal.targetAmount > 0 ? Math.round((selfSales / activeGoal.targetAmount) * 100) : 0;
+
       return {
-        totalFaturado: 3015000,
-        totalLucro: 1250000,
+        totalFaturado: isRestrictedToSelf ? selfSales : 3015000,
+        totalLucro: isRestrictedToSelf ? selfProfit : 1250000,
         margem: 41,
         highlightAttendant: {
-          name: 'Maria Silva',
-          role: 'Atendente Sénior',
-          note: '91% da meta individual atingida hoje',
-          current: 320000,
+          name: isRestrictedToSelf ? currentOperator.name : 'Maria Silva',
+          role: isRestrictedToSelf ? 'Meu Desempenho' : 'Atendente Sénior',
+          note: `${selfPct}% da meta individual atingida hoje`,
+          current: selfSales,
         },
-        activeGoalBalance: activeGoal.currentAmount,
-        performanceData: [
-          { time: '08:00', sales: 45000, profit: 12000 },
-          { time: '10:00', sales: 120000, profit: 38000 },
-          { time: '12:00', sales: 95000, profit: 29000 },
-          { time: '14:00', sales: 210000, profit: 64000 },
-          { time: '16:00', sales: 160000, profit: 45000 },
-          { time: '18:00', sales: 310000, profit: 98000 },
-          { time: '20:00', sales: 280000, profit: 87000 },
-        ],
-        teamRanking: [
-          { id: 'maria', name: 'Maria Silva', role: 'Atendente Sénior', current: 320000, target: 350000 },
-          { id: 'joao', name: 'João Pedro', role: 'Atendente', current: 210000, target: 300000 },
-          { id: 'ana', name: 'Ana Cardoso', role: 'Atendente', current: 95000, target: 250000 },
-        ],
+        activeGoalBalance: selfSales,
+        performanceData: isRestrictedToSelf
+          ? [
+              { time: '08:00', sales: Math.round(selfSales * 0.08), profit: Math.round(selfProfit * 0.08) },
+              { time: '10:00', sales: Math.round(selfSales * 0.18), profit: Math.round(selfProfit * 0.18) },
+              { time: '12:00', sales: Math.round(selfSales * 0.14), profit: Math.round(selfProfit * 0.14) },
+              { time: '14:00', sales: Math.round(selfSales * 0.22), profit: Math.round(selfProfit * 0.22) },
+              { time: '16:00', sales: Math.round(selfSales * 0.16), profit: Math.round(selfProfit * 0.16) },
+              { time: '18:00', sales: Math.round(selfSales * 0.14), profit: Math.round(selfProfit * 0.14) },
+              { time: '20:00', sales: Math.round(selfSales * 0.08), profit: Math.round(selfProfit * 0.08) },
+            ]
+          : [
+              { time: '08:00', sales: 45000, profit: 12000 },
+              { time: '10:00', sales: 120000, profit: 38000 },
+              { time: '12:00', sales: 95000, profit: 29000 },
+              { time: '14:00', sales: 210000, profit: 64000 },
+              { time: '16:00', sales: 160000, profit: 45000 },
+              { time: '18:00', sales: 310000, profit: 98000 },
+              { time: '20:00', sales: 280000, profit: 87000 },
+            ],
+        teamRanking: isRestrictedToSelf
+          ? [
+              {
+                id: currentOperator.id,
+                name: `${currentOperator.name} (Você)`,
+                role: currentOperator.role,
+                current: selfSales,
+                target: activeGoal.targetAmount,
+              },
+            ]
+          : [
+              { id: 'maria', name: 'Maria Silva', role: 'Atendente Sénior', current: 320000, target: 350000 },
+              { id: 'joao', name: 'João Pedro', role: 'Atendente', current: 210000, target: 300000 },
+              { id: 'ana', name: 'Ana Cardoso', role: 'Atendente', current: 95000, target: 250000 },
+            ],
         isFutureDay: false,
-        label: 'Resultados de Hoje em Tempo Real',
+        label: isRestrictedToSelf ? `Meu Desempenho de Hoje (${currentOperator.name})` : 'Resultados de Hoje em Tempo Real',
       };
     }
 
@@ -356,14 +354,14 @@ export const GoalsView: React.FC<GoalsViewProps> = () => {
     const pastGoalBalance = Math.round(activeGoal.targetAmount * dataSet.ratio);
 
     return {
-      totalFaturado: dataSet.faturamento,
-      totalLucro: dataSet.lucro,
+      totalFaturado: isRestrictedToSelf ? pastGoalBalance : dataSet.faturamento,
+      totalLucro: isRestrictedToSelf ? Math.round(pastGoalBalance * (margem / 100)) : dataSet.lucro,
       margem,
       highlightAttendant: {
-        name: dataSet.top,
-        role: 'Destaque do Dia',
-        note: dataSet.topNote,
-        current: dataSet.top === 'Maria Silva' ? dataSet.maria : dataSet.top === 'João Pedro' ? dataSet.joao : dataSet.ana,
+        name: isRestrictedToSelf ? currentOperator.name : dataSet.top,
+        role: isRestrictedToSelf ? 'Meu Registro' : 'Destaque do Dia',
+        note: isRestrictedToSelf ? 'Desempenho apurado no dia' : dataSet.topNote,
+        current: isRestrictedToSelf ? pastGoalBalance : (dataSet.top === 'Maria Silva' ? dataSet.maria : dataSet.top === 'João Pedro' ? dataSet.joao : dataSet.ana),
       },
       activeGoalBalance: pastGoalBalance,
       performanceData: [
@@ -375,15 +373,25 @@ export const GoalsView: React.FC<GoalsViewProps> = () => {
         { time: '18:00', sales: Math.round(dataSet.faturamento * 0.19), profit: Math.round(dataSet.lucro * 0.19) },
         { time: '20:00', sales: Math.round(dataSet.faturamento * 0.08), profit: Math.round(dataSet.lucro * 0.08) },
       ],
-      teamRanking: [
-        { id: 'maria', name: 'Maria Silva', role: 'Atendente Sénior', current: dataSet.maria, target: 350000 },
-        { id: 'joao', name: 'João Pedro', role: 'Atendente', current: dataSet.joao, target: 300000 },
-        { id: 'ana', name: 'Ana Cardoso', role: 'Atendente', current: dataSet.ana, target: 250000 },
-      ],
+      teamRanking: isRestrictedToSelf
+        ? [
+            {
+              id: currentOperator.id,
+              name: `${currentOperator.name} (Você)`,
+              role: currentOperator.role,
+              current: pastGoalBalance,
+              target: activeGoal.targetAmount,
+            },
+          ]
+        : [
+            { id: 'maria', name: 'Maria Silva', role: 'Atendente Sénior', current: dataSet.maria, target: 350000 },
+            { id: 'joao', name: 'João Pedro', role: 'Atendente', current: dataSet.joao, target: 300000 },
+            { id: 'ana', name: 'Ana Cardoso', role: 'Atendente', current: dataSet.ana, target: 250000 },
+          ],
       isFutureDay: false,
-      label: `Resultados Consolidados de ${selectedDayInfo.fullFormatted}`,
+      label: isRestrictedToSelf ? `Meu Histórico de ${selectedDayInfo.fullFormatted}` : `Resultados Consolidados de ${selectedDayInfo.fullFormatted}`,
     };
-  }, [selectedDayInfo, activeGoal]);
+  }, [selectedDayInfo, activeGoal, isRestrictedToSelf, currentOperator, operatorSalesTotal]);
 
   // Valores da Meta Selecionada
   const currentBalance = dayMetrics.activeGoalBalance;
@@ -434,13 +442,14 @@ export const GoalsView: React.FC<GoalsViewProps> = () => {
       id: `goal-${Date.now()}`,
       title: newGoalData.title,
       type: newGoalData.type,
-      attendantId: newGoalData.attendantId,
-      attendantName,
+      attendantId: isRestrictedToSelf ? currentOperator.id : newGoalData.attendantId,
+      attendantName: isRestrictedToSelf ? currentOperator.name : attendantName,
       targetAmount: newGoalData.targetAmount,
       currentAmount: initialProgress,
       dueDate: newGoalData.dueDate,
       createdAt: new Date().toISOString().split('T')[0],
       notes: newGoalData.notes,
+      operatorId: currentOperator.id,
     };
 
     setGoals((prev) => [newGoal, ...prev]);
@@ -454,8 +463,15 @@ export const GoalsView: React.FC<GoalsViewProps> = () => {
           target_amount: newGoalData.targetAmount,
           current_amount: initialProgress,
           period: 'monthly',
+          attendant_id: isRestrictedToSelf ? currentOperator.id : newGoalData.attendantId,
+          attendant_name: isRestrictedToSelf ? currentOperator.name : attendantName,
+          operator_id: currentOperator.id,
+          type: newGoalData.type,
+          due_date: newGoalData.dueDate,
+          notes: newGoalData.notes,
         },
       ]);
+      refetchGoals();
     } catch (err) {
       console.warn('Persistência em background no Supabase:', err);
     }
@@ -530,6 +546,17 @@ export const GoalsView: React.FC<GoalsViewProps> = () => {
               }`}>
                 {selectedDayInfo.isFuture ? '📅 Dia Futuro (Zerado)' : selectedDayInfo.isToday ? '⚡ Hoje em Tempo Real' : `🗓️ ${selectedDayInfo.fullFormatted}`}
               </span>
+              {isRestrictedToSelf ? (
+                <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-800 border border-emerald-500/30 flex items-center gap-1">
+                  <UserCheck size={11} className="text-emerald-600" />
+                  Sessão: {currentOperator.name} (Próprio Desempenho)
+                </span>
+              ) : (
+                <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-zinc-900 text-white border border-zinc-800 flex items-center gap-1">
+                  <ShieldCheck size={11} className="text-[#E1FB15]" />
+                  Visão Gerencial (Equipa Completa)
+                </span>
+              )}
             </div>
             <p className="text-xs text-zinc-400 font-medium mt-0.5">
               {dayMetrics.label}
@@ -1066,21 +1093,33 @@ export const GoalsView: React.FC<GoalsViewProps> = () => {
         >
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h3 className="font-bold text-base text-zinc-950">Ranking de Vendas da Equipa</h3>
+              <h3 className="font-bold text-base text-zinc-950">
+                {isRestrictedToSelf ? 'Meu Desempenho no Turno' : 'Ranking de Vendas da Equipa'}
+              </h3>
               <p className="text-xs text-zinc-400">
-                {dayMetrics.isFutureDay ? 'Sem vendas no dia futuro' : 'Progresso individual de metas'}
+                {dayMetrics.isFutureDay
+                  ? 'Sem vendas no dia futuro'
+                  : isRestrictedToSelf
+                  ? `Desempenho exclusivo de ${currentOperator.name}`
+                  : 'Progresso individual de metas'}
               </p>
             </div>
-            <select
-              value={selectedAttendant}
-              onChange={(e) => setSelectedAttendant(e.target.value)}
-              className="bg-zinc-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-zinc-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-zinc-950 cursor-pointer"
-            >
-              <option value="TODOS">Todos</option>
-              {ATTENDANTS.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
+            {isRestrictedToSelf ? (
+              <div className="bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl px-2.5 py-1 text-[11px] font-bold">
+                {currentOperator.name}
+              </div>
+            ) : (
+              <select
+                value={selectedAttendant}
+                onChange={(e) => setSelectedAttendant(e.target.value)}
+                className="bg-zinc-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-zinc-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-zinc-950 cursor-pointer"
+              >
+                <option value="TODOS">Todos os Atendentes</option>
+                {ATTENDANTS.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div className="space-y-4">
@@ -1239,13 +1278,20 @@ export const GoalsView: React.FC<GoalsViewProps> = () => {
 
       {/* 6. MÓDULO DE TEMPO DE ATENDIMENTO & RENDIMENTO */}
       <motion.div variants={item} className="space-y-4 pt-2">
-        <AttendanceStatsModule />
+        <AttendanceStatsModule
+          operatorId={currentOperator.id}
+          isRestricted={isRestrictedToSelf}
+        />
       </motion.div>
 
       {/* Modal de Nova Meta */}
       {isModalOpen && (
         <CreateGoalModal
-          attendants={ATTENDANTS}
+          attendants={
+            isRestrictedToSelf
+              ? [{ id: currentOperator.id, name: currentOperator.name }]
+              : ATTENDANTS
+          }
           onClose={() => setIsModalOpen(false)}
           onSuccess={handleGoalCreated}
         />
