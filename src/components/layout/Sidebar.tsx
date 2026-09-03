@@ -128,7 +128,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside
       id="masakula-sidebar"
-      className="fixed top-0 left-0 h-screen w-16 z-40 bg-white border-r border-gray-100 flex flex-col justify-between items-center py-4 select-none"
+      className="fixed top-0 left-0 h-screen w-16 z-40 bg-[var(--color-surface)] border-r border-[var(--color-hairline)] flex flex-col justify-between items-center py-4 select-none"
     >
       {/* 1. TOP BRAND / LOGO */}
       <div className="flex flex-col items-center gap-4 w-full">
@@ -147,7 +147,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Tooltip for Brand */}
           {hoveredTab === 'brand-logo' && (
-            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 px-3 py-1.5 bg-black text-white text-xs font-semibold rounded-md shadow-xl whitespace-nowrap pointer-events-none animate-in fade-in zoom-in-95 duration-150">
+            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 px-3 py-1.5 bg-[var(--color-ink)] text-[var(--color-surface)] text-xs font-semibold rounded-[var(--radius-sm)] shadow-[var(--shadow-pop)] whitespace-nowrap pointer-events-none animate-in fade-in zoom-in-95 duration-150">
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-red-500">Masakula</span>
                 <span className="text-zinc-300 font-normal">System</span>
@@ -156,7 +156,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </button>
 
-        <div className="w-8 h-px bg-gray-100" />
+        <div className="w-8 h-px bg-[var(--color-hairline)]" />
 
         {/* 2. MAIN NAVIGATION ICONS */}
         <nav className="flex flex-col items-center gap-2.5 w-full px-2" aria-label="Navegação Principal">
@@ -167,17 +167,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             // Badges
             let badgeText: string | number | null = null;
-            let badgeStyle = 'bg-rose-500 text-white';
+            let badgeStyle = 'bg-[var(--color-danger)] text-white';
             if (item.id === 'products' && lowStockCount > 0) {
               badgeText = lowStockCount;
-              badgeStyle = 'bg-rose-500 text-white';
+              badgeStyle = 'bg-[var(--color-danger)] text-white';
             } else if (item.id === 'service_orders' && pendingOrdersCount > 0) {
               badgeText = pendingOrdersCount;
-              badgeStyle = 'bg-amber-500 text-white';
+              badgeStyle = 'bg-[var(--color-warning)] text-white';
             }
 
             return (
               <div key={item.id} className="relative flex items-center justify-center w-full">
+                {/* Active indicator bar */}
+                {isActive && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-[var(--color-ink)]" />
+                )}
                 <button
                   id={`nav-btn-${item.id}`}
                   type="button"
@@ -185,23 +189,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onMouseEnter={() => setHoveredTab(item.id)}
                   onMouseLeave={() => setHoveredTab(null)}
                   aria-label={item.label}
-                  className={`group p-2.5 rounded-2xl transition relative cursor-pointer ${
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`group p-2.5 rounded-[var(--radius-lg)] transition relative cursor-pointer ${
                     isActive
-                      ? 'bg-black text-white shadow-md'
-                      : 'hover:bg-gray-100 text-gray-500 active:scale-95'
+                      ? 'bg-[var(--color-ink)] text-[var(--color-surface)] shadow-[var(--shadow-md)]'
+                      : 'hover:bg-[var(--color-surface-muted)] text-[var(--color-ink-muted)] active:scale-95'
                   }`}
                 >
                   <div className="transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-12">
                     <Icon
                       size={20}
-                      className={isActive ? 'text-white' : 'text-current'}
+                      className={isActive ? 'text-[var(--color-surface)]' : 'text-current'}
                     />
                   </div>
 
                   {/* Notification Badge */}
                   {badgeText !== null && (
                     <span
-                      className={`absolute -top-1 -right-1 min-w-4 h-4 px-1 flex items-center justify-center rounded-full text-[9px] font-black border-2 border-white ${badgeStyle}`}
+                      className={`absolute -top-1 -right-1 min-w-4 h-4 px-1 flex items-center justify-center rounded-full text-[9px] font-black border-2 border-[var(--color-surface)] ${badgeStyle}`}
                     >
                       {badgeText}
                     </span>
@@ -210,11 +215,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                 {/* Tooltip on Hover */}
                 {isHovered && (
-                  <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 px-3 py-1.5 bg-black text-white text-[11px] font-bold rounded-md shadow-xl whitespace-nowrap pointer-events-none animate-in fade-in zoom-in-95 duration-150">
+                  <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 px-3 py-1.5 bg-[var(--color-ink)] text-[var(--color-surface)] text-[11px] font-bold rounded-[var(--radius-sm)] shadow-[var(--shadow-pop)] whitespace-nowrap pointer-events-none animate-in fade-in zoom-in-95 duration-150">
                     <div className="flex items-center gap-1.5">
                       <span>{item.label}</span>
                       {isActive && (
-                        <span className="text-[10px] text-emerald-400 font-normal">(Ativo)</span>
+                        <span className="text-[10px] text-[var(--color-brand)] font-normal">(Ativo)</span>
                       )}
                     </div>
                   </div>
@@ -226,7 +231,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* 3. FOOTER FIXED SETTINGS & ACTIONS */}
-      <div className="flex flex-col items-center gap-2.5 w-full px-2 pt-2 border-t border-gray-100">
+      <div className="flex flex-col items-center gap-2.5 w-full px-2 pt-2 border-t border-[var(--color-hairline)]">
         {/* Settings (Fixo no Rodapé) */}
         {(() => {
           const Icon = SETTINGS_ITEM.icon;
@@ -242,23 +247,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onMouseEnter={() => setHoveredTab(SETTINGS_ITEM.id)}
                 onMouseLeave={() => setHoveredTab(null)}
                 aria-label={SETTINGS_ITEM.label}
-                className={`group p-2.5 rounded-2xl transition relative cursor-pointer ${
+                aria-current={isActive ? 'page' : undefined}
+                className={`group p-2.5 rounded-[var(--radius-lg)] transition relative cursor-pointer ${
                   isActive
-                    ? 'bg-black text-white shadow-md'
-                    : 'text-gray-400 hover:bg-gray-100 active:scale-95'
+                    ? 'bg-[var(--color-ink)] text-[var(--color-surface)] shadow-[var(--shadow-md)]'
+                    : 'text-[var(--color-ink-faint)] hover:bg-[var(--color-surface-muted)] active:scale-95'
                 }`}
               >
                 <div className="transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-12">
                   <Icon
                     size={20}
-                    className={isActive ? 'text-white' : 'text-current'}
+                    className={isActive ? 'text-[var(--color-surface)]' : 'text-current'}
                   />
                 </div>
               </button>
 
               {/* Tooltip */}
               {isHovered && (
-                <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 px-3 py-1.5 bg-black text-white text-[11px] font-bold rounded-md shadow-xl whitespace-nowrap pointer-events-none animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 px-3 py-1.5 bg-[var(--color-ink)] text-[var(--color-surface)] text-[11px] font-bold rounded-[var(--radius-sm)] shadow-[var(--shadow-pop)] whitespace-nowrap pointer-events-none animate-in fade-in zoom-in-95 duration-150">
                   <span>{SETTINGS_ITEM.label}</span>
                 </div>
               )}
@@ -275,12 +281,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onMouseEnter={() => setHoveredTab('logout')}
               onMouseLeave={() => setHoveredTab(null)}
               title="Sair"
-              className="p-2.5 rounded-2xl text-red-500 hover:bg-red-50 transition cursor-pointer"
+              className="p-2.5 rounded-[var(--radius-lg)] text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] transition cursor-pointer"
             >
               <LogOut size={20} />
             </button>
             {hoveredTab === 'logout' && (
-              <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 px-3 py-1.5 bg-black text-white text-[11px] font-bold rounded-md shadow-xl whitespace-nowrap pointer-events-none">
+              <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 px-3 py-1.5 bg-[var(--color-ink)] text-[var(--color-surface)] text-[11px] font-bold rounded-[var(--radius-sm)] shadow-[var(--shadow-pop)] whitespace-nowrap pointer-events-none">
                 <span>Sair</span>
               </div>
             )}

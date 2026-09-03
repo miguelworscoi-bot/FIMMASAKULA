@@ -6,6 +6,79 @@
   --font-masakula: 'Josefin Sans', sans-serif;
   --font-body: 'Josefin Sans', sans-serif;
   --font-heading: 'Josefin Sans', sans-serif;
+
+  /* ============================================================
+     WORSCOI POS — Design System Tokens (Light Premium)
+     Additive layer: existing hardcoded utilities keep working.
+     New/refined components consume these semantic tokens.
+     ============================================================ */
+
+  /* Surfaces & neutrals */
+  --color-canvas: #fcfcfc;          /* app background */
+  --color-surface: #ffffff;         /* cards, panels */
+  --color-surface-muted: #f6f6f7;   /* subtle fills, table headers */
+  --color-surface-sunken: #f1f1f2;  /* insets, track backgrounds */
+  --color-hairline: #ededf0;        /* subtle borders */
+  --color-line: #e4e4e7;            /* standard borders */
+  --color-line-strong: #d4d4d8;     /* emphasized borders */
+
+  /* Ink (text) */
+  --color-ink: #09090b;             /* primary text / primary actions */
+  --color-ink-soft: #3f3f46;        /* secondary text */
+  --color-ink-muted: #71717a;       /* tertiary text / captions */
+  --color-ink-faint: #a1a1aa;       /* placeholder / disabled */
+
+  /* Brand accent (emerald — financial confidence) */
+  --color-brand: #059669;
+  --color-brand-strong: #047857;
+  --color-brand-soft: #ecfdf5;
+  --color-brand-ink: #065f46;
+  --color-brand-contrast: #ffffff;
+
+  /* Semantic — success */
+  --color-success: #059669;
+  --color-success-soft: #ecfdf5;
+  --color-success-ink: #065f46;
+  /* Semantic — warning */
+  --color-warning: #d97706;
+  --color-warning-soft: #fffbeb;
+  --color-warning-ink: #92400e;
+  /* Semantic — danger */
+  --color-danger: #e11d48;
+  --color-danger-soft: #fff1f2;
+  --color-danger-ink: #9f1239;
+  /* Semantic — info */
+  --color-info: #0284c7;
+  --color-info-soft: #f0f9ff;
+  --color-info-ink: #075985;
+
+  /* Masakula AI — reserved signature accent (use ONLY for AI) */
+  --color-ai: #e1fb15;
+  --color-ai-ink: #131313;
+
+  /* Radius scale (established identity leans on generous rounding) */
+  --radius-xs: 0.375rem;   /* 6px */
+  --radius-sm: 0.5rem;     /* 8px */
+  --radius-md: 0.75rem;    /* 12px */
+  --radius-lg: 1rem;       /* 16px — default card/button */
+  --radius-xl: 1.25rem;    /* 20px */
+  --radius-2xl: 1.5rem;    /* 24px */
+
+  /* Elevation — discreet, purposeful */
+  --shadow-xs: 0 1px 2px 0 rgb(9 9 11 / 0.04);
+  --shadow-sm: 0 1px 3px 0 rgb(9 9 11 / 0.06), 0 1px 2px -1px rgb(9 9 11 / 0.05);
+  --shadow-md: 0 4px 12px -2px rgb(9 9 11 / 0.08), 0 2px 6px -2px rgb(9 9 11 / 0.05);
+  --shadow-lg: 0 12px 28px -6px rgb(9 9 11 / 0.12), 0 6px 12px -6px rgb(9 9 11 / 0.08);
+  --shadow-pop: 0 16px 40px -8px rgb(9 9 11 / 0.16);
+}
+
+@layer base {
+  /* Financial figures read better with lining tabular numerals */
+  .tabular-nums,
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
 }
 
 @layer utilities {
