@@ -289,7 +289,14 @@ export const FloatingTrashCan: React.FC = () => {
                 opacity: 1 
               }}
               exit={{ scale: 0, rotate: 25, opacity: 0 }}
-              transition={{ type: 'spring', damping: 18, stiffness: 300 }}
+              transition={{
+                scale: { type: 'spring', damping: 18, stiffness: 300 },
+                rotate: isAbsorbing 
+                  ? { duration: 0.45, ease: 'easeInOut' } 
+                  : { duration: 0.2 },
+                opacity: { duration: 0.2 },
+                layout: { type: 'spring', damping: 20, stiffness: 300 },
+              }}
               onClick={() => {
                 if (isTrashOpen) {
                   handleCloseTrash();

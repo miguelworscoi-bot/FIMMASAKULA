@@ -18,7 +18,8 @@ import {
   Building2,
   Calendar,
   Layers,
-  Sparkles
+  Sparkles,
+  Wallet
 } from 'lucide-react';
 import { CashSession, CashMovement } from '../../types';
 import { formatKz, formatDate, formatTime } from '../../utils/formatters';
