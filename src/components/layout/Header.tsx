@@ -34,11 +34,10 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenQuickSale,
   onOpenQuickOS,
   onOpenQuickProduct,
-  todaySalesTotal = 2586090,
-  lowStockCount = 2,
-  openOSCount = 3,
+  todaySalesTotal = 0,
+  lowStockCount = 0,
+  openOSCount = 0,
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
 
   const getPageInfo = (tab: ActiveTab | NavigationTab) => {
     switch (tab) {
