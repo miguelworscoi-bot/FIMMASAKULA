@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Trash2, 
@@ -30,9 +30,50 @@ export const FloatingTrashCan: React.FC = () => {
   } = useTrash();
 
   const [isHovered, setIsHovered] = useState(false);
+  const [isTemporarilyVisible, setIsTemporarilyVisible] = useState(false);
+  const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // O ícone SÓ APARECE se houver elementos apagados na lixeira ou partículas em trânsito
-  const isVisible = deletedItems.length > 0 || flyingParticles.length > 0;
+  // Monitora o ciclo de vida da exclusão:
+  // 1. Ao apagar, partículas entram em voo ou a absorção é ativada -> Lixeira surge instantaneamente
+  // 2. Quando a partícula é absorvida e o efeito termina -> Fica visível por ~1.8s e depois DESAPARECE
+  useEffect(() => {
+    if (flyingParticles.length > 0 || isAbsorbing) {
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = null;
+      }
+      setIsTemporarilyVisible(true);
+    } else if (isTemporarilyVisible && !isTrashOpen && !isHovered) {
+      // Quando termina a absorção do artigo, aguarda 1.8s para mostrar a tampa fechada
+      // e depois desvanece completamente, esperando a próxima vez que for acionado
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current);
+      }
+      hideTimerRef.current = setTimeout(() => {
+        setIsTemporarilyVisible(false);
+        hideTimerRef.current = null;
+      }, 1800);
+    }
+
+    return () => {
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current);
+      }
+    };
+  }, [flyingParticles.length, isAbsorbing, isTemporarilyVisible, isTrashOpen, isHovered]);
+
+  const handleCloseTrash = () => {
+    setIsTrashOpen(false);
+    setIsTemporarilyVisible(false);
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+  };
+
+  // O ícone SÓ APARECE durante a ação de apagar (e o breve momento de absorção),
+  // ou se o utilizador abriu explicitamente a lixeira para restaurar
+  const isVisible = isTrashOpen || isTemporarilyVisible || flyingParticles.length > 0 || isAbsorbing;
 
   const getItemIcon = (type: string) => {
     switch (type) {
@@ -53,6 +94,14 @@ export const FloatingTrashCan: React.FC = () => {
 
   return (
     <>
+      {/* Backdrop sutil quando o painel de ver a lixeira estiver aberto */}
+      {isTrashOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px]" 
+          onClick={handleCloseTrash} 
+        />
+      )}
+
       {/* 1. OVERLAY DE ELEMENTOS EM VOO: O elemento viaja pelo ar e entra fisicamente dentro do ícone da lixeira */}
       <div className="pointer-events-none fixed inset-0 z-[100] overflow-hidden">
         {flyingParticles.map((particle) => {
@@ -140,7 +189,7 @@ export const FloatingTrashCan: React.FC = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => setIsTrashOpen(false)}
+                      onClick={handleCloseTrash}
                       className="rounded-lg p-1 text-zinc-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
                       title="Fechar"
                     >
@@ -241,7 +290,13 @@ export const FloatingTrashCan: React.FC = () => {
               }}
               exit={{ scale: 0, rotate: 25, opacity: 0 }}
               transition={{ type: 'spring', damping: 18, stiffness: 300 }}
-              onClick={() => setIsTrashOpen(!isTrashOpen)}
+              onClick={() => {
+                if (isTrashOpen) {
+                  handleCloseTrash();
+                } else {
+                  setIsTrashOpen(true);
+                }
+              }}
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
               className={`relative flex h-14 w-14 items-center justify-center rounded-2xl shadow-2xl transition-colors duration-200 cursor-pointer ${

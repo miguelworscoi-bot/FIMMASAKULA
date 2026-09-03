@@ -92,6 +92,9 @@ export const TrashProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (clickPos && 'clientX' in clickPos && typeof clickPos.clientX === 'number') {
         startX = clickPos.clientX;
         startY = clickPos.clientY;
+      } else {
+        startX += (Math.random() - 0.5) * 60;
+        startY += (Math.random() - 0.5) * 40;
       }
 
       const particleId = `particle-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
