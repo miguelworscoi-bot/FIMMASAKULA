@@ -222,9 +222,15 @@ export const CashSessionView: React.FC<CashSessionViewProps> = ({
   const totalSangrias = movements
     .filter(m => m.type === 'SANGRIA')
     .reduce((acc, m) => acc + Number(m.amount), 0);
+  const cashStats = [
+    { label: 'Saldo inicial', value: formatKz(activeSession?.initial_amount || 0), icon: Coins, tone: 'text-zinc-950' },
+    { label: 'Entradas', value: `+${formatKz(totalSuprimentos)}`, icon: ArrowUpRight, tone: 'text-emerald-600' },
+    { label: 'Saídas', value: `-${formatKz(totalSangrias)}`, icon: ArrowDownLeft, tone: 'text-rose-600' },
+    { label: 'Saldo atual', value: formatKz(activeSession?.expected_cash || 0), icon: Wallet, tone: 'text-[#131313]' },
+  ];
 
   return (
-    <div id="view-cash-session" className="space-y-6 animate-in fade-in duration-200 text-[#131313]">
+    <div id="view-cash-session" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 text-[#131313]">
       {/* Toast Feedback */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-[#131313] text-white px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-semibold animate-in fade-in slide-in-from-bottom-3">
@@ -355,6 +361,18 @@ export const CashSessionView: React.FC<CashSessionViewProps> = ({
                 <span>Fechar Caixa</span>
               </button>
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+            {cashStats.map(({ label, value, icon: Icon, tone }) => (
+              <div key={label} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-xs transition-transform hover:-translate-y-0.5">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-zinc-400">{label}</span>
+                  <Icon size={16} className={tone} />
+                </div>
+                <p className={`text-lg font-black ${tone}`}>{value}</p>
+              </div>
+            ))}
           </div>
 
           {/* Cards de Balanço do Caixa em Tempo Real */}

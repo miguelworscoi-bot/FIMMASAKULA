@@ -191,9 +191,16 @@ export const ServiceOrdersView: React.FC<ServiceOrdersViewProps> = ({
   const totalLabor = parseFloat(formData.laborCost) || 0;
   const formTotalCost = totalParts + totalLabor;
   const hasActiveFilters = searchTerm !== '' || statusFilter !== 'all';
+  const orderStats = [
+    { label: 'Total de ordens', value: workOrders.length, tone: 'bg-zinc-950 text-white', icon: FileText },
+    { label: 'Abertas', value: workOrders.filter((order) => order.status === 'pending').length, tone: 'bg-rose-50 text-rose-700', icon: AlertCircle },
+    { label: 'Em andamento', value: workOrders.filter((order) => ['diagnosing', 'waiting_parts', 'in_progress'].includes(order.status)).length, tone: 'bg-amber-50 text-amber-700', icon: Clock },
+    { label: 'Concluídas', value: workOrders.filter((order) => ['completed', 'delivered'].includes(order.status)).length, tone: 'bg-emerald-50 text-emerald-700', icon: CheckCircle2 },
+    { label: 'Valor em carteira', value: formatKz(workOrders.reduce((total, order) => total + order.totalCost, 0)), tone: 'bg-[#E1FB15]/30 text-zinc-950', icon: DollarSign },
+  ];
 
   return (
-    <div id="view-work-orders" className="space-y-5 animate-in fade-in duration-200">
+    <div id="view-work-orders" className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
       {/* Toast Feedback */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-zinc-950 text-white px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-semibold animate-in fade-in slide-in-from-bottom-3">
@@ -228,8 +235,20 @@ export const ServiceOrdersView: React.FC<ServiceOrdersViewProps> = ({
         </button>
       </div>
 
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        {orderStats.map(({ label, value, tone, icon: Icon }) => (
+          <div key={label} className={`rounded-2xl border border-gray-100 p-4 shadow-xs transition-transform hover:-translate-y-0.5 ${tone}`}>
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-wider opacity-70">{label}</span>
+              <Icon size={16} />
+            </div>
+            <p className="text-xl font-black tracking-tight">{value}</p>
+          </div>
+        ))}
+      </div>
+
       {/* FILTROS & BARRA DE PESQUISA REATIVA */}
-      <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+      <div className="flex flex-col gap-3 rounded-3xl border border-gray-100 bg-zinc-50/70 p-3 shadow-xs md:flex-row md:items-center md:justify-between">
         {/* Status Filter Buttons */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 custom-scrollbar">
           {[

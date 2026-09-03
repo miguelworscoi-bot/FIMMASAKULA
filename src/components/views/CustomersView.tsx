@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
   Users, 
   Plus, 
@@ -33,6 +33,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
 
   const [formData, setFormData] = useState({
@@ -48,6 +49,12 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
     c.nifOrBi.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.phone.includes(searchTerm)
   );
+  const customerStats = useMemo(() => ({
+    total: customers.length,
+    active: customers.filter((customer) => customer.status === 'active').length,
+    newCustomers: customers.filter((customer) => customer.lastPurchaseDate === new Date().toISOString().split('T')[0]).length,
+    value: customers.reduce((total, customer) => total + customer.totalSpent, 0),
+  }), [customers]);
 
   const handleOpenModal = (customer?: Customer) => {
     if (customer) {
@@ -129,10 +136,9 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
   };
 
   return (
-    <div id="view-customers" className="space-y-6 animate-in fade-in duration-200">
+    <div id="view-customers" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
       {/* BANNER DE UNDO NA PRÓPRIA PÁGINA (aparece instantaneamente aqui quando se apaga um cliente) */}
       <InlinePageUndoBanner pageType="customer" />
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-gray-100 shadow-xs">
         <div>
@@ -151,6 +157,20 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
           <Plus size={16} className="text-emerald-400" />
           <span>Novo Cliente</span>
         </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[
+          { label: 'Total de clientes', value: customerStats.total, tone: 'text-zinc-950' },
+          { label: 'Clientes ativos', value: customerStats.active, tone: 'text-emerald-600' },
+          { label: 'Novos hoje', value: customerStats.newCustomers, tone: 'text-amber-600' },
+          { label: 'Volume comprado', value: formatKz(customerStats.value), tone: 'text-zinc-950' },
+        ].map((stat) => (
+          <div key={stat.label} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-xs transition-transform hover:-translate-y-0.5">
+            <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400">{stat.label}</p>
+            <p className={`mt-2 text-xl font-black ${stat.tone}`}>{stat.value}</p>
+          </div>
+        ))}
       </div>
 
       {/* Search Bar */}
@@ -190,7 +210,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                 </tr>
               ) : (
                 filteredCustomers.map((c) => (
-                  <tr key={c.id} className="hover:bg-zinc-50/60 transition-colors">
+                  <tr key={c.id} onClick={() => setSelectedCustomer(c)} className="cursor-pointer hover:bg-zinc-50/60 transition-colors">
                     <td className="py-3.5 px-4">
                       <div className="font-bold text-zinc-950">{c.name}</div>
                       <span className="text-[10px] text-zinc-400">Última compra: {formatDate(c.lastPurchaseDate)}</span>
@@ -236,6 +256,27 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
           </table>
         </div>
       </div>
+
+      {selectedCustomer && (
+        <div className="rounded-3xl border border-zinc-200 bg-zinc-950 p-5 text-white shadow-xl animate-in fade-in slide-in-from-right-2">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#E1FB15]">Perfil selecionado</p>
+              <h3 className="mt-1 text-lg font-black">{selectedCustomer.name}</h3>
+              <p className="text-xs text-zinc-400">{selectedCustomer.phone} · {selectedCustomer.email || 'Sem email'}</p>
+            </div>
+            <button type="button" onClick={() => setSelectedCustomer(null)} className="rounded-xl p-2 text-zinc-400 hover:bg-white/10 hover:text-white" aria-label="Fechar perfil do cliente">
+              <X size={16} />
+            </button>
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div><p className="text-[10px] text-zinc-500">Total gasto</p><p className="mt-1 font-mono font-bold">{formatKz(selectedCustomer.totalSpent)}</p></div>
+            <div><p className="text-[10px] text-zinc-500">Compras</p><p className="mt-1 font-mono font-bold">{selectedCustomer.totalOrders}</p></div>
+            <div><p className="text-[10px] text-zinc-500">Ticket médio</p><p className="mt-1 font-mono font-bold">{formatKz(selectedCustomer.totalOrders ? selectedCustomer.totalSpent / selectedCustomer.totalOrders : 0)}</p></div>
+            <div><p className="text-[10px] text-zinc-500">Última atividade</p><p className="mt-1 font-mono font-bold">{formatDate(selectedCustomer.lastPurchaseDate)}</p></div>
+          </div>
+        </div>
+      )}
 
       {/* Add / Edit Customer Modal */}
       {isModalOpen && (

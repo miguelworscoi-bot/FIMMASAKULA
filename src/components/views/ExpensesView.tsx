@@ -263,12 +263,24 @@ const ExpensesContent: React.FC<ExpensesViewProps> = ({
       return matchesSearch && matchesStatus && matchesCategory;
     });
   }, [expenses, searchTerm, filterStatus, filterCategory]);
+  const expenseInsights = useMemo(() => {
+    const categoryTotals = expenses.reduce<Record<string, number>>((totals, expense) => {
+      const category = expense.category || 'Outros';
+      totals[category] = (totals[category] || 0) + (Number(expense.amount) || 0);
+      return totals;
+    }, {});
+    const topCategory = Object.entries(categoryTotals).sort(([, first], [, second]) => second - first)[0];
+    return {
+      topCategory: topCategory?.[0] || 'Sem dados',
+      recurring: expenses.filter((expense) => Boolean((expense as Expense & { recurring?: boolean }).recurring)).length,
+      average: expenses.length ? indicators.totalAmount / expenses.length : 0,
+    };
+  }, [expenses, indicators.totalAmount]);
 
   return (
-    <div id="view-expenses" className="space-y-6 animate-in fade-in duration-200 text-[#131313]">
-      {/* BANNER DE UNDO NA PRÓPRIA PÁGINA (aparece instantaneamente aqui quando se apaga uma despesa) */}
+    <div id="view-expenses" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 text-[#131313]">
+      {/* BANNER DE UNDO NA PRÓPRIA PÁGINA */}
       <InlinePageUndoBanner pageType="expense" />
-
       {/* Toast Feedback */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-[#131313] text-white px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-semibold animate-in fade-in slide-in-from-bottom-3">
@@ -340,6 +352,24 @@ const ExpensesContent: React.FC<ExpensesViewProps> = ({
           <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl">
             <AlertCircle size={22} />
           </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="rounded-2xl border border-gray-100 bg-zinc-50 p-4 shadow-xs">
+          <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Total lançado</p>
+          <p className="mt-1 text-lg font-black text-zinc-950">{formatKz(indicators.totalAmount)}</p>
+          <p className="mt-1 text-[11px] text-zinc-500">Média de {formatKz(expenseInsights.average)} por lançamento</p>
+        </div>
+        <div className="rounded-2xl border border-gray-100 bg-zinc-50 p-4 shadow-xs">
+          <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Maior categoria</p>
+          <p className="mt-1 text-lg font-black text-zinc-950">{expenseInsights.topCategory}</p>
+          <p className="mt-1 text-[11px] text-zinc-500">Concentração principal do período</p>
+        </div>
+        <div className="rounded-2xl border border-gray-100 bg-zinc-50 p-4 shadow-xs">
+          <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Recorrentes</p>
+          <p className="mt-1 text-lg font-black text-zinc-950">{expenseInsights.recurring}</p>
+          <p className="mt-1 text-[11px] text-zinc-500">Despesas sinalizadas como recorrentes</p>
         </div>
       </div>
 

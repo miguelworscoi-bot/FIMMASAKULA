@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, BrainCircuit, Search, RefreshCw, FileDown, CheckCircle, Calculator, LineChart } from 'lucide-react';
+import { Sparkles, BrainCircuit, Search, RefreshCw, FileDown, CheckCircle, Calculator, LineChart, TrendingUp, AlertTriangle, ArrowRight, Activity } from 'lucide-react';
 import { useDeadStock, type DeadStockItem } from '../hooks/useDeadStock';
 import { formatKz } from '../utils/formatters';
 import DeadStockDetectorSection from './DeadStockDetectorSection';
@@ -91,9 +91,32 @@ export default function BusinessIntelligenceScreen() {
         return 'Aplicar Desconto 15%';
     }
   };
+  const commandInsights = [
+    {
+      level: 'Oportunidade',
+      title: 'Acelerar produtos de maior giro',
+      text: 'Use os itens de maior rotação para criar combinações com produtos de menor saída.',
+      icon: TrendingUp,
+      tone: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+    },
+    {
+      level: 'Atenção',
+      title: `${deadStockItems.length || 4} produtos exigem decisão`,
+      text: 'Capital parado reduz liquidez. Priorize liquidação, desconto ou combo nesta semana.',
+      icon: AlertTriangle,
+      tone: 'border-amber-200 bg-amber-50 text-amber-800',
+    },
+    {
+      level: 'Próxima ação',
+      title: 'Revise a margem antes de repor',
+      text: 'Cruze o preço, custo e velocidade de venda para proteger a margem operacional.',
+      icon: Activity,
+      tone: 'border-zinc-200 bg-zinc-50 text-zinc-800',
+    },
+  ];
 
   return (
-    <div className="w-full min-h-screen bg-white text-[#131313] p-6 md:p-8 space-y-6">
+    <div className="w-full min-h-screen bg-white p-6 text-[#131313] space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 md:p-8">
       
       {/* Cabeçalho da Tela */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
@@ -103,10 +126,10 @@ export default function BusinessIntelligenceScreen() {
           </div>
           <div>
             <h1 className="text-2xl font-black text-[#131313] tracking-tight">
-              Masakula Intelligence & BI
+              Masakula AI <span className="text-[#32D583]">Command Center</span>
             </h1>
             <p className="text-xs text-gray-500 font-medium">
-              Previsão de estoque, diagnóstico de produtos encalhados e consultas por IA
+              O cérebro operacional do seu negócio: sinais, riscos e próximas decisões
             </p>
           </div>
         </div>
@@ -238,6 +261,26 @@ export default function BusinessIntelligenceScreen() {
             <ClayMetricCard title="Margem Bruta Média" value="38,5%" badge="+1.4%" type="positive" />
             <ClayMetricCard title="Previsão de Recompra" value="4 Produtos" badge="Atenção" type="warning" />
           </div>
+
+          <section className="rounded-3xl border border-zinc-200 bg-zinc-950 p-5 text-white shadow-xl">
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+              <div>
+                <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#E1FB15]"><Sparkles size={13} /> Radar de decisão</p>
+                <h2 className="mt-1 text-lg font-black">O que merece atenção agora</h2>
+              </div>
+              <span className="rounded-full border border-white/10 px-3 py-1 text-[10px] font-bold text-zinc-400">Atualizado neste momento</span>
+            </div>
+            <div className="mt-4 grid gap-3 lg:grid-cols-3">
+              {commandInsights.map(({ level, title, text, icon: Icon, tone }, index) => (
+                <div key={title} className={`animate-in fade-in slide-in-from-bottom-2 rounded-2xl border p-4 duration-300 ${tone}`} style={{ animationDelay: `${index * 80}ms` }}>
+                  <div className="flex items-center justify-between"><span className="text-[10px] font-black uppercase tracking-wider opacity-70">{level}</span><Icon size={16} /></div>
+                  <h3 className="mt-3 text-sm font-black">{title}</h3>
+                  <p className="mt-1 text-xs leading-relaxed opacity-80">{text}</p>
+                  <button type="button" className="mt-3 flex items-center gap-1 text-[11px] font-black opacity-80 transition hover:opacity-100">Ver recomendação <ArrowRight size={13} /></button>
+                </div>
+              ))}
+            </div>
+          </section>
 
           {/* Detector e Tabela de Produtos Encalhados (Dead Stock) */}
           <DeadStockDetectorSection />
