@@ -181,8 +181,7 @@ const ExpensesContent: React.FC<ExpensesViewProps> = ({
       }, e ? { clientX: e.clientX, clientY: e.clientY } : undefined);
     }
 
-    showToast(`Despesa "${description}" movida para a lixeira.`);
-    toast.success(`Despesa "${description}" eliminada.`);
+    toast.success(`Despesa "${description}" movida para a lixeira.`);
     setExpenseToDelete(null);
   };
 

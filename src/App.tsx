@@ -102,19 +102,13 @@ export function MasakulaSystem() {
           )}
         </AnimatePresence>
 
-        {/* Configuração do Toaster com posição no canto superior direito */}
+        {/* Configuração do Toaster centralizado na base inferior para não cobrir botões de ação */}
         <Toaster
-          position="top-right"
+          position="bottom-center"
           theme="dark"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: "transparent",
-              border: "none",
-              boxShadow: "none",
-              padding: 0,
-            },
-          }}
+          closeButton
+          richColors
+          duration={2500}
         />
       </div>
     </TrashProvider>

@@ -28,12 +28,16 @@ export interface CachedProduct {
   categoryName?: string;
   categoryColor?: string;
   updatedAt: string;
+  deleted_at?: string | null;
+  _synced?: boolean;
 }
 
 export interface CachedCategory {
   id: string;
   name: string;
   colorHex: string;
+  deleted_at?: string | null;
+  _synced?: boolean;
 }
 
 export class POSOfflineDatabase extends Dexie {

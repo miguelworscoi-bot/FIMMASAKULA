@@ -80,7 +80,7 @@ export const InlinePageUndoBanner: React.FC<InlinePageUndoBannerProps> = ({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -16, scale: 0.97 }}
         transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-        className={`sticky top-3 z-40 overflow-hidden rounded-2xl bg-zinc-950/95 border-2 border-[#E1FB15]/40 text-white shadow-2xl backdrop-blur-xl p-3.5 mb-5 ${className}`}
+        className={`relative z-20 overflow-hidden rounded-2xl bg-zinc-950/95 border border-[#E1FB15]/40 text-white shadow-xl backdrop-blur-xl p-3.5 mb-5 ${className}`}
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Informação contextual do item apagado */}

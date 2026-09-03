@@ -509,8 +509,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
         }, clickCoords);
       }
 
-      showToast(`Item "${name}" movido para a lixeira.`);
-      toast.success(`Artigo "${name}" removido.`);
+      toast.success(`Artigo "${name}" movido para a lixeira.`);
     } finally {
       setIsDeletingProduct(false);
       setProductToDelete(null);
@@ -546,8 +545,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
         });
       });
 
-      showToast(`${count} artigos movidos para a lixeira.`);
-      toast.success(`${count} artigos removidos.`);
+      toast.success(`${count} artigos movidos para a lixeira.`);
     } finally {
       setIsBatchDeleting(false);
       setIsBatchDeleteModalOpen(false);
