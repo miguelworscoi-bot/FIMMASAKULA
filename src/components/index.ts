@@ -24,7 +24,7 @@ export { RoleGuard } from './RoleGuard';
 // View Submodules & Modals
 export { ProductsView } from './views/ProductsView';
 export { default as ProductsPage, ProductsPage as MasakulaProductsPage } from '../screens/ProductsPage';
-export { default as POSPage } from '../screens/POSPage';
+export { default as POSPage, default as PosOfflinePage } from '../screens/PosOfflinePage';
 export { StockModal } from './views/StockModal';
 export { ServiceOrdersView, WorkOrdersView } from './views/ServiceOrdersView';
 export { PosView } from './views/PosView';
@@ -147,4 +147,5 @@ export type { ProductRegistrationFormProps } from './admin/ProductRegistrationFo
 export { StockEntryModal } from './admin/StockEntryModal';
 export type { StockEntryModalProps, StockEntryData } from './admin/StockEntryModal';
 export { ProductsManagementPage } from '../screens/ProductsManagementPage';
+export { AnimatedTrashManager, type TrashItem, type AnimatedTrashManagerProps } from './pdv/AnimatedTrashManager';
 

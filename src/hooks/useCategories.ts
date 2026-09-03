@@ -399,14 +399,19 @@ export function useCategories() {
       setError(null);
 
       try {
-        // Tenta a RPC no Supabase/Postgres
-        const { error: rpcError } = await supabase.rpc("delete_category_and_reassign", {
-          p_category_id: categoryId,
-          p_target_category_id: targetCategoryId,
-        });
+        if (targetCategoryId) {
+          // Tenta a RPC no Supabase/Postgres quando há categoria destino
+          const { error: rpcError } = await supabase.rpc("delete_category_and_reassign", {
+            p_category_id: categoryId,
+            p_target_category_id: targetCategoryId,
+          });
 
-        if (rpcError) {
-          // Fallback para delete direto se a RPC não estiver disponível
+          if (rpcError) {
+            console.warn("RPC delete_category_and_reassign failed, falling back to direct delete:", rpcError);
+            await supabase.from("categories").delete().eq("id", categoryId);
+          }
+        } else {
+          // Eliminação direta
           await supabase.from("categories").delete().eq("id", categoryId);
         }
       } catch (dbErr) {
@@ -424,8 +429,18 @@ export function useCategories() {
         return next;
       });
     } catch (err: any) {
+      console.error("Erro ao eliminar categoria:", err);
+      // Garante remoção local mesmo se a chamada remota falhar
+      setCategories((prev) => {
+        const next = prev.filter((c) => c.id !== categoryId);
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify(next));
+          } catch (e) {}
+        }
+        return next;
+      });
       setError(err.message || "Erro ao eliminar categoria.");
-      throw err;
     }
   };
 

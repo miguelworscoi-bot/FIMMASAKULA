@@ -23,8 +23,23 @@ export class SerialQueueManager {
       return this.port;
     }
 
-    const ports = await navigator.serial.getPorts();
-    if (ports.length === 0) {
+    let ports: SerialPort[] = [];
+    try {
+      ports = await (navigator as any).serial.getPorts();
+    } catch (err: any) {
+      if (
+        err?.name === "SecurityError" ||
+        err?.message?.toLowerCase().includes("permissions policy") ||
+        err?.message?.toLowerCase().includes("disallowed")
+      ) {
+        throw new Error(
+          "Acesso à porta serial bloqueado por política de segurança no iframe. Abra a aplicação num novo separador para usar a impressora física."
+        );
+      }
+      throw err;
+    }
+
+    if (!ports || ports.length === 0) {
       throw new Error("Nenhuma impressora autorizada. Configure a impressora primeiro.");
     }
 

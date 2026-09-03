@@ -5,15 +5,9 @@ import { LoginModal } from './components/auth/LoginModal';
 import { AppShell } from './components/layout/AppShell';
 import { IntroVideo } from './components/intro/IntroVideo';
 import { Toaster } from 'sonner';
+import { TrashProvider } from './contexts/TrashContext';
 
 export function MasakulaSystem() {
-  // Navigation State Machine
-  const [flowState, setFlowState] = useState<AppFlowState>('INTRO');
-
-  useEffect(() => {
-    //
-  }, []);
-
   // Authenticated User Session
   const [userSession, setUserSession] = useState<UserSession>(() => {
     try {
@@ -27,8 +21,22 @@ export function MasakulaSystem() {
       name: 'Miguel Worscoi',
       role: 'Administrador Master',
       terminalId: 'Caixa 01 - Balcão Principal',
-      isLoggedIn: false,
+      isLoggedIn: true,
     };
+  });
+
+  // Navigation State Machine - Direct entry to App Shell
+  const [flowState, setFlowState] = useState<AppFlowState>(() => {
+    try {
+      const saved = localStorage.getItem('masakula_user_session_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.isLoggedIn === false) return 'LOGIN';
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+    return 'APP_SHELL';
   });
 
   // Save session state to localStorage
@@ -52,62 +60,64 @@ export function MasakulaSystem() {
   };
 
   return (
-    <div id="masakula-root-entry" className="min-h-screen bg-zinc-950 font-sans antialiased selection:bg-zinc-900 selection:text-white">
-      <AnimatePresence mode="wait">
-        {flowState === 'INTRO' && (
-          <motion.div
-            key="intro"
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="min-h-screen w-full"
-          >
-            <IntroVideo onFinish={() => setFlowState('LOGIN')} />
-          </motion.div>
-        )}
+    <TrashProvider>
+      <div id="masakula-root-entry" className="min-h-screen bg-zinc-950 font-sans antialiased selection:bg-zinc-900 selection:text-white">
+        <AnimatePresence mode="wait">
+          {flowState === 'INTRO' && (
+            <motion.div
+              key="intro"
+              initial={{ opacity: 1 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="min-h-screen w-full"
+            >
+              <IntroVideo onFinish={() => setFlowState('LOGIN')} />
+            </motion.div>
+          )}
 
-        {flowState === 'LOGIN' && (
-          <motion.div
-            key="login"
-            initial={{ opacity: 0, filter: 'blur(4px)' }}
-            animate={{ opacity: 1, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, filter: 'blur(4px)' }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            className="min-h-screen w-full bg-[#f8f9fa]"
-          >
-            <LoginModal onLoginSuccess={handleLoginSuccess} />
-          </motion.div>
-        )}
+          {flowState === 'LOGIN' && (
+            <motion.div
+              key="login"
+              initial={{ opacity: 0, filter: 'blur(4px)' }}
+              animate={{ opacity: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, filter: 'blur(4px)' }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              className="min-h-screen w-full bg-[#f8f9fa]"
+            >
+              <LoginModal onLoginSuccess={handleLoginSuccess} />
+            </motion.div>
+          )}
 
-        {flowState === 'APP_SHELL' && (
-          <motion.div
-            key="app"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="min-h-screen w-full"
-          >
-            <AppShell userSession={userSession} onLogout={handleLogout} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+          {flowState === 'APP_SHELL' && (
+            <motion.div
+              key="app"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="min-h-screen w-full"
+            >
+              <AppShell userSession={userSession} onLogout={handleLogout} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* Configuração do Toaster com posição no canto superior direito */}
-      <Toaster
-        position="top-right"
-        theme="dark"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: "transparent",
-            border: "none",
-            boxShadow: "none",
-            padding: 0,
-          },
-        }}
-      />
-    </div>
+        {/* Configuração do Toaster com posição no canto superior direito */}
+        <Toaster
+          position="top-right"
+          theme="dark"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: "transparent",
+              border: "none",
+              boxShadow: "none",
+              padding: 0,
+            },
+          }}
+        />
+      </div>
+    </TrashProvider>
   );
 }
 

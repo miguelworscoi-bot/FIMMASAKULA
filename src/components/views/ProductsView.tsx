@@ -55,6 +55,10 @@ import { InventoryQuickStockModal } from '../inventory/InventoryQuickStockModal'
 import { InventoryBatchBar } from '../inventory/InventoryBatchBar';
 import { exportInventoryToExcel } from '../../utils/exportInventory';
 import { CategoriesSubscreenPage } from '../CategoriesSubscreenPage';
+import { ConfirmModal } from '../ui/ConfirmModal';
+import { toast } from 'sonner';
+import { useTrash } from '../../contexts/TrashContext';
+import { InlinePageUndoBanner } from '../ui/InlinePageUndoBanner';
 
 interface ProductsViewProps {
   products: Product[];
@@ -82,6 +86,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
 }) => {
   const { hasRole } = useAuth();
   const isManager = hasRole(['GERENTE']);
+  const { trash } = useTrash();
 
   // Filters & View State
   const [productSubTab, setProductSubTab] = useState<'inventory' | 'categories'>('inventory');
@@ -104,6 +109,12 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
 
   const [isQuickStockModalOpen, setIsQuickStockModalOpen] = useState(false);
   const [printingLabelProduct, setPrintingLabelProduct] = useState<Product | null>(null);
+
+  // Deletion Modal States
+  const [productToDelete, setProductToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [isDeletingProduct, setIsDeletingProduct] = useState(false);
+  const [isBatchDeleteModalOpen, setIsBatchDeleteModalOpen] = useState(false);
+  const [isBatchDeleting, setIsBatchDeleting] = useState(false);
 
   const [activeToasts, setActiveToasts] = useState<StockToast[]>([]);
   const [isMatrixOpen, setIsMatrixOpen] = useState(false);
@@ -456,12 +467,20 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     }
   };
 
-  const handleDeleteProduct = async (id: string, name: string) => {
+  const handleDeleteProduct = (id: string, name: string) => {
     if (!isManager) {
       setRestrictedActionAlert('Remoção de artigos requer perfil GERENTE.');
       return;
     }
-    if (window.confirm(`Tem certeza de que deseja excluir o produto "${name}" do catálogo?`)) {
+    setProductToDelete({ id, name });
+  };
+
+  const confirmDeleteProduct = async () => {
+    if (!productToDelete) return;
+    const { id, name } = productToDelete;
+    const targetProduct = products.find(p => p.id === id);
+    setIsDeletingProduct(true);
+    try {
       setProducts(prev => prev.filter(p => p.id !== id));
       if (selectedProductForDetail?.id === id) {
         setIsDetailDrawerOpen(false);
@@ -471,8 +490,66 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
         next.delete(id);
         return next;
       });
-      showToast(`Item "${name}" removido do catálogo.`);
-      supabaseService.deleteProduct(id).catch(err => console.warn('Supabase delete:', err));
+
+      if (targetProduct) {
+        trash({
+          id: targetProduct.id,
+          name: targetProduct.name,
+          type: 'product',
+          typeLabel: 'Artigo',
+          data: targetProduct,
+          onRestore: (restored: Product) => {
+            setProducts(prev => [restored, ...prev]);
+            supabaseService.insertProduct(restored).catch(err => console.warn('Supabase sync:', err));
+          },
+          onPermanentDelete: (item: Product) => {
+            supabaseService.deleteProduct(item.id).catch(err => console.warn('Supabase delete:', err));
+          },
+        });
+      }
+
+      showToast(`Item "${name}" movido para a lixeira.`);
+      toast.success(`Artigo "${name}" removido.`);
+    } finally {
+      setIsDeletingProduct(false);
+      setProductToDelete(null);
+    }
+  };
+
+  const confirmBatchDelete = async () => {
+    if (selectedProductIds.size === 0) return;
+    setIsBatchDeleting(true);
+    const count = selectedProductIds.size;
+    const itemsToDelete = products.filter(p => selectedProductIds.has(p.id));
+    try {
+      setProducts(prev => prev.filter(p => !selectedProductIds.has(p.id)));
+      if (selectedProductForDetail && selectedProductIds.has(selectedProductForDetail.id)) {
+        setIsDetailDrawerOpen(false);
+      }
+      setSelectedProductIds(new Set());
+
+      itemsToDelete.forEach((prod) => {
+        trash({
+          id: prod.id,
+          name: prod.name,
+          type: 'product',
+          typeLabel: 'Artigo',
+          data: prod,
+          onRestore: (restored: Product) => {
+            setProducts(prev => [restored, ...prev]);
+            supabaseService.insertProduct(restored).catch(err => console.warn('Supabase sync:', err));
+          },
+          onPermanentDelete: (item: Product) => {
+            supabaseService.deleteProduct(item.id).catch(err => console.warn('Supabase delete:', err));
+          },
+        });
+      });
+
+      showToast(`${count} artigos movidos para a lixeira.`);
+      toast.success(`${count} artigos removidos.`);
+    } finally {
+      setIsBatchDeleting(false);
+      setIsBatchDeleteModalOpen(false);
     }
   };
 
@@ -693,6 +770,9 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           );
         })}
       </div>
+
+      {/* BANNER DE UNDO NA PRÓPRIA PÁGINA (aparece instantaneamente aqui quando se apaga um artigo) */}
+      <InlinePageUndoBanner pageType="product" />
 
       {/* 1. TOP HEADER & ACTION BAR */}
       <div className="bg-white border border-zinc-200 rounded-3xl p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -1457,6 +1537,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
         onClearSelection={handleClearSelection}
         onBatchPrintLabels={handleBatchPrintLabels}
         onBatchExport={handleBatchExport}
+        onBatchDelete={() => setIsBatchDeleteModalOpen(true)}
       />
 
       {/* 6. MODAL UNIFICADO DE CRIAÇÃO / EDIÇÃO DE PRODUTO */}
@@ -1552,6 +1633,32 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       <PermissionMatrixModal
         isOpen={isMatrixOpen}
         onClose={() => setIsMatrixOpen(false)}
+      />
+
+      {/* 12. MODAL DE CONFIRMAÇÃO DE EXCLUSÃO DE PRODUTO */}
+      <ConfirmModal
+        isOpen={!!productToDelete}
+        title="Eliminar Artigo do Catálogo"
+        description={`Tem a certeza de que deseja eliminar o artigo "${productToDelete?.name}"? Esta ação removerá o produto do catálogo e do inventário.`}
+        confirmText="Sim, Eliminar Artigo"
+        cancelText="Cancelar"
+        isDestructive={true}
+        isLoading={isDeletingProduct}
+        onConfirm={confirmDeleteProduct}
+        onClose={() => setProductToDelete(null)}
+      />
+
+      {/* 13. MODAL DE CONFIRMAÇÃO DE EXCLUSÃO EM MASSA */}
+      <ConfirmModal
+        isOpen={isBatchDeleteModalOpen}
+        title="Eliminar Artigos Selecionados"
+        description={`Tem a certeza de que deseja eliminar os ${selectedProductIds.size} artigos selecionados do catálogo?`}
+        confirmText={`Sim, Eliminar ${selectedProductIds.size} Artigos`}
+        cancelText="Cancelar"
+        isDestructive={true}
+        isLoading={isBatchDeleting}
+        onConfirm={confirmBatchDelete}
+        onClose={() => setIsBatchDeleteModalOpen(false)}
       />
       </>
       )}

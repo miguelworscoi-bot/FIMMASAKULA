@@ -42,11 +42,12 @@ export function DeleteCategoryModal({
   const handleConfirm = async () => {
     try {
       setIsDeleting(true);
-      const target = deleteMode === "reassign" ? targetCategoryId : null;
+      const target = deleteMode === "reassign" ? (targetCategoryId || (otherCategories[0]?.id ?? null)) : null;
       await onConfirm(categoryToDelete.id, target);
       onClose();
     } catch (error) {
       console.error("Erro ao eliminar categoria:", error);
+      onClose();
     } finally {
       setIsDeleting(false);
     }

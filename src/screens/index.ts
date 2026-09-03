@@ -1,7 +1,7 @@
 export { default as MetasPage } from './MetasPage';
 export { default as PDVMainView } from './PDVMainView';
 export { default as PosPage, PosPage as PosScreen } from './PosPage';
-export { default as POSPage } from './POSPage';
+export { default as PosOfflinePage, default as POSPage } from './PosOfflinePage';
 export { default as ProductsManagementPage } from './ProductsManagementPage';
 export { default as ProductsPage } from './ProductsPage';
 export { default as PosTerminalPage } from './PosTerminalPage';

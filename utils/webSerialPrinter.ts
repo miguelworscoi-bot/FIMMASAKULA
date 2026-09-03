@@ -36,7 +36,17 @@ export async function printViaWebSerial(data: Uint8Array): Promise<void> {
     }
 
     await writer.write(data);
-  } catch (error) {
+  } catch (error: any) {
+    if (
+      error?.name === "SecurityError" ||
+      error?.message?.toLowerCase().includes("permissions policy") ||
+      error?.message?.toLowerCase().includes("disallowed")
+    ) {
+      console.warn("Acesso serial bloqueado por política de permissões (iframe).");
+      throw new Error(
+        "Acesso à porta serial restrito no modo de pré-visualização (iframe). Abra a aplicação num novo separador para imprimir diretamente na impressora térmica física."
+      );
+    }
     console.error("Erro na impressão via Web Serial:", error);
     throw error;
   } finally {

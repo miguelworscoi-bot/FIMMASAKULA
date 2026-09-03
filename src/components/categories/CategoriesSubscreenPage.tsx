@@ -5,7 +5,11 @@ import { useCategories } from "@/hooks/useCategories";
 import { CategoryFolderCard } from "@/components/categories/CategoryFolderCard";
 import { CategoryFormModal, CategoryFormData } from "@/components/categories/CategoryFormModal";
 import { DeleteCategoryModal } from "@/components/categories/DeleteCategoryModal";
-import { Loader2, Plus } from "lucide-react";
+import { AnimatedTrashManager } from "@/components/pdv/AnimatedTrashManager";
+import { Loader2, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { useTrash } from "@/contexts/TrashContext";
+import { InlinePageUndoBanner } from "@/components/ui/InlinePageUndoBanner";
 
 export interface CategoriesSubscreenPageProps {
   onSelectCategoryFilter?: (categoryName: string) => void;
@@ -25,10 +29,13 @@ export default function CategoriesSubscreenPage({
     deleteAndReassign,
   } = useCategories();
 
+  const { trash } = useTrash();
+
   // Estados de Modais
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [deletingCategory, setDeletingCategory] = useState<any>(null);
+  const [isTrashOpen, setIsTrashOpen] = useState(false);
 
   // Handlers
   const handleOpenCreate = () => {
@@ -63,7 +70,32 @@ export default function CategoriesSubscreenPage({
     categoryId: string,
     targetCategoryId: string | null
   ) => {
-    await deleteAndReassign(categoryId, targetCategoryId);
+    try {
+      const cat = deletingCategory;
+      const catName = cat?.name || "Categoria";
+      await deleteAndReassign(categoryId, targetCategoryId);
+
+      if (cat) {
+        trash({
+          id: cat.id,
+          name: cat.name,
+          type: 'category',
+          typeLabel: 'Categoria',
+          data: { category: cat, targetCategoryId },
+          onRestore: async (itemData) => {
+            await createCategory({
+              name: itemData.category.name,
+              colorHex: itemData.category.colorHex,
+            });
+          },
+        });
+      }
+
+      toast.success(`Categoria "${catName}" movida para a lixeira.`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao eliminar categoria.");
+    }
   };
 
   if (loading) {
@@ -79,14 +111,26 @@ export default function CategoriesSubscreenPage({
       {/* Botão de Criação */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-white">Categorias</h1>
-        <button
-          onClick={handleOpenCreate}
-          className="flex items-center gap-2 rounded-2xl bg-[#32D583] px-4 py-2.5 text-xs font-bold text-black transition hover:bg-[#28c072] cursor-pointer shadow-lg shadow-emerald-500/20"
-        >
-          <Plus className="h-4 w-4" />
-          Nova Categoria
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsTrashOpen(true)}
+            className="flex items-center gap-2 rounded-2xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white px-4 py-2.5 text-xs font-bold transition cursor-pointer border border-white/10 shadow-sm"
+          >
+            <Trash2 className="h-4 w-4 text-rose-400" />
+            <span>Reciclagem & Arquivo</span>
+          </button>
+          <button
+            onClick={handleOpenCreate}
+            className="flex items-center gap-2 rounded-2xl bg-[#32D583] px-4 py-2.5 text-xs font-bold text-black transition hover:bg-[#28c072] cursor-pointer shadow-lg shadow-emerald-500/20"
+          >
+            <Plus className="h-4 w-4" />
+            Nova Categoria
+          </button>
+        </div>
       </div>
+
+      {/* BANNER DE UNDO NA PRÓPRIA PÁGINA (aparece instantaneamente aqui quando se apaga uma categoria) */}
+      <InlinePageUndoBanner pageType="category" />
 
       {error && (
         <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 text-xs text-rose-400">
@@ -162,6 +206,17 @@ export default function CategoriesSubscreenPage({
         onClose={() => setDeletingCategory(null)}
         onConfirm={handleConfirmDelete}
       />
+
+      {/* Modal da Lixeira & Arquivo Animada */}
+      {isTrashOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl animate-in zoom-in-95 duration-150">
+            <AnimatedTrashManager
+              onClose={() => setIsTrashOpen(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

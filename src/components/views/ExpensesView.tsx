@@ -27,6 +27,10 @@ import { formatKz, formatDate } from '../../utils/formatters';
 import { supabaseService } from '../../services/supabaseService';
 import { supabase } from '../../lib/supabase';
 import { RoleGuard } from '../RoleGuard';
+import { ConfirmModal } from '../ui/ConfirmModal';
+import { toast } from 'sonner';
+import { useTrash } from '../../contexts/TrashContext';
+import { InlinePageUndoBanner } from '../ui/InlinePageUndoBanner';
 
 interface ExpensesViewProps {
   expenses: Expense[];
@@ -48,12 +52,14 @@ const ExpensesContent: React.FC<ExpensesViewProps> = ({
   expenses,
   setExpenses,
 }) => {
+  const { trash } = useTrash();
   const [loading, setLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [filterCategory, setFilterCategory] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [expenseToDelete, setExpenseToDelete] = useState<{ id: string; description: string } | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Formulário State
@@ -148,12 +154,36 @@ const ExpensesContent: React.FC<ExpensesViewProps> = ({
     }
   };
 
-  const handleDelete = async (id: string, description: string) => {
-    if (window.confirm(`Deseja realmente eliminar a despesa "${description}"?`)) {
-      setExpenses(prev => prev.filter(exp => exp.id !== id));
-      showToast(`Despesa "${description}" eliminada.`);
-      supabaseService.deleteExpense(id).catch(err => console.warn(err));
+  const handleDelete = (id: string, description: string) => {
+    setExpenseToDelete({ id, description });
+  };
+
+  const confirmDeleteExpense = () => {
+    if (!expenseToDelete) return;
+    const { id, description } = expenseToDelete;
+    const targetExp = expenses.find((e) => e.id === id);
+    setExpenses((prev) => prev.filter((exp) => exp.id !== id));
+
+    if (targetExp) {
+      trash({
+        id: targetExp.id,
+        name: targetExp.description,
+        type: 'expense',
+        typeLabel: 'Despesa',
+        data: targetExp,
+        onRestore: (restored: Expense) => {
+          setExpenses((prev) => [restored, ...prev]);
+          supabaseService.insertExpense(restored).catch((err) => console.warn(err));
+        },
+        onPermanentDelete: (exp: Expense) => {
+          supabaseService.deleteExpense(exp.id).catch((err) => console.warn(err));
+        },
+      });
     }
+
+    showToast(`Despesa "${description}" movida para a lixeira.`);
+    toast.success(`Despesa "${description}" eliminada.`);
+    setExpenseToDelete(null);
   };
 
   const resetForm = () => {
@@ -236,6 +266,9 @@ const ExpensesContent: React.FC<ExpensesViewProps> = ({
 
   return (
     <div id="view-expenses" className="space-y-6 animate-in fade-in duration-200 text-[#131313]">
+      {/* BANNER DE UNDO NA PRÓPRIA PÁGINA (aparece instantaneamente aqui quando se apaga uma despesa) */}
+      <InlinePageUndoBanner pageType="expense" />
+
       {/* Toast Feedback */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-[#131313] text-white px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-semibold animate-in fade-in slide-in-from-bottom-3">
@@ -642,6 +675,18 @@ const ExpensesContent: React.FC<ExpensesViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmação de Exclusão de Despesa */}
+      <ConfirmModal
+        isOpen={!!expenseToDelete}
+        title="Eliminar Despesa"
+        description={`Tem a certeza de que deseja eliminar o lançamento da despesa "${expenseToDelete?.description}"?`}
+        confirmText="Sim, Eliminar Despesa"
+        cancelText="Cancelar"
+        isDestructive={true}
+        onConfirm={confirmDeleteExpense}
+        onClose={() => setExpenseToDelete(null)}
+      />
     </div>
   );
 };

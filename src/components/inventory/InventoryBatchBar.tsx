@@ -9,6 +9,7 @@ interface InventoryBatchBarProps {
   onClearSelection: () => void;
   onBatchPrintLabels: () => void;
   onBatchExport: () => void;
+  onBatchDelete?: () => void;
 }
 
 export const InventoryBatchBar: React.FC<InventoryBatchBarProps> = ({
@@ -18,6 +19,7 @@ export const InventoryBatchBar: React.FC<InventoryBatchBarProps> = ({
   onClearSelection,
   onBatchPrintLabels,
   onBatchExport,
+  onBatchDelete,
 }) => {
   if (selectedCount === 0) return null;
 
@@ -50,6 +52,18 @@ export const InventoryBatchBar: React.FC<InventoryBatchBarProps> = ({
           <Download size={13} className="text-[#32D583]" />
           <span>Exportar ({selectedCount})</span>
         </button>
+
+        {onBatchDelete && (
+          <button
+            type="button"
+            onClick={onBatchDelete}
+            className="px-3 py-1.5 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-800/50 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+            title="Eliminar artigos selecionados"
+          >
+            <Trash2 size={13} className="text-rose-400" />
+            <span>Eliminar ({selectedCount})</span>
+          </button>
+        )}
 
         {selectedCount < totalCount && (
           <button

@@ -132,6 +132,7 @@ export function BreakageSummaryCharts({ data, isLoading }: Props) {
   }
 
   const currentActiveItem = chartData[activeIndex] || chartData[0];
+  const CustomPie = Pie as any;
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -184,7 +185,7 @@ export function BreakageSummaryCharts({ data, isLoading }: Props) {
         <div className="relative h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie
+              <CustomPie
                 activeIndex={activeIndex}
                 activeShape={renderActiveShape}
                 data={chartData}
@@ -198,7 +199,7 @@ export function BreakageSummaryCharts({ data, isLoading }: Props) {
                 isAnimationActive={true}
                 animationDuration={1200}
                 animationEasing="ease-out"
-                onMouseEnter={(_, index) => {
+                onMouseEnter={(_: any, index: number) => {
                   setAutoRotate(false);
                   setActiveIndex(index);
                 }}
@@ -213,7 +214,7 @@ export function BreakageSummaryCharts({ data, isLoading }: Props) {
                     className="transition-all duration-300"
                   />
                 ))}
-              </Pie>
+              </CustomPie>
               <Tooltip
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {

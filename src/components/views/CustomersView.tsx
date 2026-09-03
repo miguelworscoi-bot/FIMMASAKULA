@@ -15,6 +15,10 @@ import {
 } from 'lucide-react';
 import { Customer } from '../../types';
 import { formatKz, formatDate } from '../../utils/formatters';
+import { ConfirmModal } from '../ui/ConfirmModal';
+import { toast } from 'sonner';
+import { useTrash } from '../../contexts/TrashContext';
+import { InlinePageUndoBanner } from '../ui/InlinePageUndoBanner';
 
 interface CustomersViewProps {
   customers: Customer[];
@@ -25,9 +29,11 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
   customers,
   setCustomers,
 }) => {
+  const { trash } = useTrash();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -96,13 +102,37 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
   };
 
   const handleDeleteCustomer = (id: string) => {
-    if (window.confirm('Eliminar cliente do cadastro?')) {
-      setCustomers(prev => prev.filter(c => c.id !== id));
+    const cust = customers.find(c => c.id === id);
+    if (cust) {
+      setCustomerToDelete(cust);
     }
+  };
+
+  const confirmDeleteCustomer = () => {
+    if (!customerToDelete) return;
+    const targetCust = customerToDelete;
+    setCustomers(prev => prev.filter(c => c.id !== targetCust.id));
+
+    trash({
+      id: targetCust.id,
+      name: targetCust.name,
+      type: 'customer',
+      typeLabel: 'Cliente',
+      data: targetCust,
+      onRestore: (restored: Customer) => {
+        setCustomers(prev => [restored, ...prev]);
+      },
+    });
+
+    toast.success(`Cliente "${targetCust.name}" movido para a lixeira.`);
+    setCustomerToDelete(null);
   };
 
   return (
     <div id="view-customers" className="space-y-6 animate-in fade-in duration-200">
+      {/* BANNER DE UNDO NA PRÓPRIA PÁGINA (aparece instantaneamente aqui quando se apaga um cliente) */}
+      <InlinePageUndoBanner pageType="customer" />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-gray-100 shadow-xs">
         <div>
@@ -305,6 +335,18 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmação de Exclusão de Cliente */}
+      <ConfirmModal
+        isOpen={!!customerToDelete}
+        title="Eliminar Cliente"
+        description={`Tem a certeza de que deseja eliminar o cliente "${customerToDelete?.name}" do cadastro? Esta ação não pode ser desfeita.`}
+        confirmText="Sim, Eliminar Cliente"
+        cancelText="Cancelar"
+        isDestructive={true}
+        onConfirm={confirmDeleteCustomer}
+        onClose={() => setCustomerToDelete(null)}
+      />
     </div>
   );
 };

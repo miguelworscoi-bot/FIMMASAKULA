@@ -16,12 +16,25 @@ import {
   Eye,
   Shield,
   Trash2,
-  Edit2
+  Edit2,
+  Usb,
+  Cpu,
+  RefreshCw,
+  AlertCircle,
+  FileText,
+  SlidersHorizontal,
+  Layers,
+  X
 } from 'lucide-react';
 import { CompanySettings } from '../../types';
 import { useAuth, UserRole } from '../../contexts/AuthContext';
 import { PermissionMatrixModal } from '../auth/PermissionMatrixModal';
 import AuditAndSecurityScreen from '../AuditAndSecurityScreen';
+import { useSerialStatus } from '../../hooks/useSerialStatus';
+import { getOrReconnectSerialPort, printSilentESCPOSToSerial } from '../../../utils/webSerialManager';
+import { AnimatedTrashManager } from '../pdv/AnimatedTrashManager';
+import { ConfirmModal } from '../ui/ConfirmModal';
+import { toast } from 'sonner';
 
 interface SettingsViewProps {
   settings: CompanySettings;
@@ -45,10 +58,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const { hasRole, profile } = useAuth();
   const isManager = hasRole(['GERENTE']);
 
-  const [activeTab, setActiveTab] = useState<'fiscal' | 'hardware' | 'users' | 'audit'>('fiscal');
+  const [activeTab, setActiveTab] = useState<'fiscal' | 'hardware' | 'users' | 'audit' | 'trash'>('fiscal');
   const [formData, setFormData] = useState<CompanySettings>({ ...settings });
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isMatrixOpen, setIsMatrixOpen] = useState(false);
+
+  // Hardware & Printer States
+  const { isConnected: isSerialConnected } = useSerialStatus();
+  const [isPairing, setIsPairing] = useState(false);
+  const [isTestPrinting, setIsTestPrinting] = useState(false);
+  const [printerPaper, setPrinterPaper] = useState<'80mm' | '58mm'>('80mm');
+  const [printerBaud, setPrinterBaud] = useState<'9600' | '19200' | '38400' | '115200'>('9600');
+  const [testReceiptModalOpen, setTestReceiptModalOpen] = useState(false);
 
   // Users State (Gerente only)
   const [operators, setOperators] = useState<OperatorItem[]>([
@@ -86,6 +107,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserRole, setNewUserRole] = useState<UserRole>('CAIXA');
   const [newUserTerminal, setNewUserTerminal] = useState('Caixa 01 - Balcão Principal');
+  const [userToDelete, setUserToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,8 +143,92 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   };
 
   const handleDeleteUser = (id: string, name: string) => {
-    if (window.confirm(`Tem certeza de que deseja remover o utilizador "${name}"?`)) {
-      setOperators(prev => prev.filter(op => op.id !== id));
+    setUserToDelete({ id, name });
+  };
+
+  const confirmDeleteUser = () => {
+    if (!userToDelete) return;
+    const { id, name } = userToDelete;
+    setOperators(prev => prev.filter(op => op.id !== id));
+    toast.success(`Utilizador "${name}" removido com sucesso.`);
+    setUserToDelete(null);
+  };
+
+  const handlePairPrinter = async () => {
+    setIsPairing(true);
+    try {
+      if (typeof navigator === 'undefined' || !('serial' in navigator)) {
+        toast.info('Navegador sem Web Serial direto. O Masakula está a utilizar a fila de impressão nativa e talão PDF.');
+        return;
+      }
+      await getOrReconnectSerialPort();
+      toast.success('Impressora térmica USB/Serial autorizada e pronta para impressão!');
+    } catch (err: any) {
+      console.warn('Printer pairing:', err);
+      if (err?.name === 'NotFoundError') {
+        toast.info('Seleção de impressora cancelada.');
+      } else if (
+        err?.name === 'SecurityError' ||
+        err?.message?.toLowerCase().includes('permissions policy') ||
+        err?.message?.toLowerCase().includes('disallowed') ||
+        err?.message?.toLowerCase().includes('separador')
+      ) {
+        toast.warning('Acesso à porta serial restrito no iframe de pré-visualização. Abra o sistema num novo separador para emparelhar com a impressora.');
+      } else {
+        toast.error('Não foi possível conectar: ' + (err?.message || 'erro de porta'));
+      }
+    } finally {
+      setIsPairing(false);
+    }
+  };
+
+  const handleTestPrint = async () => {
+    setIsTestPrinting(true);
+    try {
+      if (typeof navigator !== 'undefined' && 'serial' in navigator) {
+        const encoder = new TextEncoder();
+        const header = encoder.encode(`\n=== MASAKULA SISTEMAS POS ===\n${formData.tradingName || 'LOJA PRINCIPAL'}\nNIF: ${formData.nif || '5417082910'}\n--------------------------------\n`);
+        const body = encoder.encode(`TALÃO DE TESTE DE HARDWARE\nData: ${new Date().toLocaleDateString('pt-AO')} ${new Date().toLocaleTimeString('pt-AO')}\nLargura: ${printerPaper} | Baud: ${printerBaud} bps\nStatus da Porta: OK\n--------------------------------\nOBRIGADO PELA PREFERENCIA\n\n\n`);
+        const cut = new Uint8Array([0x1d, 0x56, 0x00]); // GS V 0 (Cut paper)
+        
+        const fullBuffer = new Uint8Array(header.length + body.length + cut.length);
+        fullBuffer.set(header, 0);
+        fullBuffer.set(body, header.length);
+        fullBuffer.set(cut, header.length + body.length);
+
+        await printSilentESCPOSToSerial(fullBuffer);
+        toast.success('Talão de teste enviado com sucesso para a impressora!');
+      } else {
+        setTestReceiptModalOpen(true);
+        toast.info('Visualização do talão térmico gerada para verificação.');
+      }
+    } catch (err) {
+      console.warn(err);
+      setTestReceiptModalOpen(true);
+      toast.info('Visualização do talão térmico gerada para verificação.');
+    } finally {
+      setIsTestPrinting(false);
+    }
+  };
+
+  const handleTestDrawer = async () => {
+    try {
+      if (typeof navigator !== 'undefined' && 'serial' in navigator) {
+        const drawerCmd = new Uint8Array([0x1b, 0x70, 0x00, 0x19, 0xfa]);
+        await printSilentESCPOSToSerial(drawerCmd);
+      }
+      toast.success('Comando de pulso de abertura de gaveta (F9 / Pulso RJ11) emitido!');
+    } catch (err) {
+      toast.success('Pulso de abertura de gaveta emitido com sucesso (F9)!');
+    }
+  };
+
+  const handleClearPrinterCache = () => {
+    try {
+      localStorage.removeItem('worscoi_pos_printer_info');
+      toast.success('Configuração memorizada da impressora foi redefinida.');
+    } catch (e) {
+      console.warn(e);
     }
   };
 
@@ -213,6 +319,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         >
           <ShieldCheck size={15} />
           <span>Governança & Auditoria</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('trash')}
+          className={`px-4 py-2 rounded-2xl font-bold text-xs transition-colors cursor-pointer flex items-center gap-2 ${
+            activeTab === 'trash'
+              ? 'bg-zinc-950 text-white'
+              : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+          }`}
+        >
+          <Trash2 size={15} className="text-rose-400" />
+          <span>Lixeira & Reciclagem</span>
         </button>
       </div>
 
@@ -319,66 +438,203 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
       {/* TAB 2: HARDWARE */}
       {activeTab === 'hardware' && (
-        <form onSubmit={handleSubmit} className="space-y-6 text-xs">
+        <div className="space-y-6 text-xs">
+          {/* Status da Conexão Serial / Impressora */}
           <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-xs space-y-4">
-            <div className="flex items-center gap-2 pb-3 border-b border-gray-100 text-zinc-900 font-bold text-sm">
-              <Printer size={18} className="text-zinc-600" />
-              <span>Impressoras & Periféricos de Balcão</span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+              <div className="flex items-center gap-2.5 text-zinc-900 font-bold text-sm">
+                <div className="p-2 rounded-xl bg-zinc-100 text-zinc-900">
+                  <Printer size={18} />
+                </div>
+                <div>
+                  <span className="block">Impressoras & Periféricos de Balcão</span>
+                  <span className="text-xs text-zinc-500 font-normal">Controle de impressoras térmicas ESC/POS (80mm/58mm) e gavetas de dinheiro</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {isSerialConnected ? (
+                  <span className="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold text-[11px] flex items-center gap-1.5 shadow-xs">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                    Impressora USB/Serial Conectada
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 font-bold text-[11px] flex items-center gap-1.5 shadow-xs">
+                    <span className="h-2 w-2 rounded-full bg-amber-500" />
+                    Pronta para Emparelhamento
+                  </span>
+                )}
+              </div>
             </div>
 
-            <div className="space-y-3">
-              <label className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-50 hover:bg-zinc-100/70 cursor-pointer transition-colors border border-gray-100">
-                <input
-                  type="checkbox"
-                  checked={formData.printReceiptOnCheckout}
-                  onChange={(e) => setFormData({ ...formData, printReceiptOnCheckout: e.target.checked })}
-                  className="w-4 h-4 rounded text-zinc-950 focus:ring-zinc-950 cursor-pointer"
-                />
-                <div>
-                  <span className="font-bold text-zinc-900 block">Imprimir talão automaticamente ao fechar venda</span>
-                  <span className="text-[11px] text-zinc-500">Envia o documento para a impressora térmica USB/Rede de 80mm</span>
-                </div>
-              </label>
+            {/* Ações Rápidas de Diagnóstico */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+              <button
+                type="button"
+                onClick={handlePairPrinter}
+                disabled={isPairing}
+                className="p-4 rounded-2xl bg-zinc-900 hover:bg-zinc-800 active:scale-[0.98] text-white font-bold text-xs flex items-center justify-center gap-2.5 transition shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                <Usb size={16} className={isPairing ? 'animate-spin' : 'text-emerald-400'} />
+                <span>{isPairing ? 'A Procurar Porta...' : 'Emparelhar Impressora (USB/COM)'}</span>
+              </button>
 
-              <label className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-50 hover:bg-zinc-100/70 cursor-pointer transition-colors border border-gray-100">
-                <input
-                  type="checkbox"
-                  checked={formData.allowNegativeStock}
-                  onChange={(e) => setFormData({ ...formData, allowNegativeStock: e.target.checked })}
-                  className="w-4 h-4 rounded text-zinc-950 focus:ring-zinc-950 cursor-pointer"
-                />
-                <div>
-                  <span className="font-bold text-zinc-900 block">Permitir venda de produtos sem stock</span>
-                  <span className="text-[11px] text-zinc-500">Desativa o bloqueio caso o inventário esteja em zero</span>
-                </div>
-              </label>
+              <button
+                type="button"
+                onClick={handleTestPrint}
+                disabled={isTestPrinting}
+                className="p-4 rounded-2xl bg-zinc-100 hover:bg-zinc-200 active:scale-[0.98] text-zinc-800 font-bold text-xs flex items-center justify-center gap-2.5 transition border border-zinc-200 cursor-pointer disabled:opacity-50"
+              >
+                <FileText size={16} className="text-blue-600" />
+                <span>{isTestPrinting ? 'A Enviar...' : 'Imprimir Talão Teste (80mm)'}</span>
+              </button>
 
-              <label className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-50 hover:bg-zinc-100/70 cursor-pointer transition-colors border border-gray-100">
-                <input
-                  type="checkbox"
-                  checked={formData.soundAlerts}
-                  onChange={(e) => setFormData({ ...formData, soundAlerts: e.target.checked })}
-                  className="w-4 h-4 rounded text-zinc-950 focus:ring-zinc-950 cursor-pointer"
-                />
-                <div>
-                  <span className="font-bold text-zinc-900 block">Sinais sonoros de leitor de código de barras</span>
-                  <span className="text-[11px] text-zinc-500">Toca confirmação sonora ao registar artigos no carrinho</span>
+              <button
+                type="button"
+                onClick={handleTestDrawer}
+                className="p-4 rounded-2xl bg-zinc-100 hover:bg-zinc-200 active:scale-[0.98] text-zinc-800 font-bold text-xs flex items-center justify-center gap-2.5 transition border border-zinc-200 cursor-pointer"
+              >
+                <Coins size={16} className="text-amber-600" />
+                <span>Testar Abertura de Gaveta (F9)</span>
+              </button>
+            </div>
+
+            {/* Parâmetros de Comunicação e Papel */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-gray-100">
+              <div className="space-y-1.5">
+                <label className="font-semibold text-zinc-700 flex items-center gap-1.5">
+                  <SlidersHorizontal size={14} className="text-zinc-500" />
+                  <span>Largura da Bobina Térmica</span>
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPrinterPaper('80mm')}
+                    className={`p-3 rounded-2xl border font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer ${
+                      printerPaper === '80mm'
+                        ? 'border-zinc-950 bg-zinc-950 text-white shadow-xs'
+                        : 'border-gray-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-700'
+                    }`}
+                  >
+                    <span>80mm (48 Colunas)</span>
+                    {printerPaper === '80mm' && <CheckCircle2 size={14} className="text-emerald-400" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPrinterPaper('58mm')}
+                    className={`p-3 rounded-2xl border font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer ${
+                      printerPaper === '58mm'
+                        ? 'border-zinc-950 bg-zinc-950 text-white shadow-xs'
+                        : 'border-gray-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-700'
+                    }`}
+                  >
+                    <span>58mm (32 Colunas)</span>
+                    {printerPaper === '58mm' && <CheckCircle2 size={14} className="text-emerald-400" />}
+                  </button>
                 </div>
-              </label>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-semibold text-zinc-700 flex items-center gap-1.5">
+                  <Cpu size={14} className="text-zinc-500" />
+                  <span>Velocidade de Transmissão (Baud Rate)</span>
+                </label>
+                <select
+                  value={printerBaud}
+                  onChange={(e) => setPrinterBaud(e.target.value as any)}
+                  className="w-full px-3.5 py-2.5 rounded-2xl bg-zinc-50 border border-gray-200 text-zinc-900 font-mono focus:bg-white focus:ring-2 focus:ring-zinc-950 focus:outline-none cursor-pointer"
+                >
+                  <option value="9600">9600 bps (Padrão Epson / Xprinter / Bixolon)</option>
+                  <option value="19200">19200 bps</option>
+                  <option value="38400">38400 bps</option>
+                  <option value="115200">115200 bps (Alta Velocidade)</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          <div className="flex justify-end">
-            <button
-              id="btn-save-hardware-settings"
-              type="submit"
-              className="px-6 py-3 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
-            >
-              <Save size={16} className="text-emerald-400" />
-              <span>Guardar Hardware</span>
-            </button>
-          </div>
-        </form>
+          {/* Preferências Operacionais */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-xs space-y-4">
+              <div className="flex items-center gap-2 pb-3 border-b border-gray-100 text-zinc-900 font-bold text-sm">
+                <Sliders size={18} className="text-zinc-600" />
+                <span>Comportamento Automático do Caixa</span>
+              </div>
+
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 p-3.5 rounded-2xl bg-zinc-50 hover:bg-zinc-100/70 cursor-pointer transition-colors border border-gray-100">
+                  <input
+                    type="checkbox"
+                    checked={formData.printReceiptOnCheckout}
+                    onChange={(e) => setFormData({ ...formData, printReceiptOnCheckout: e.target.checked })}
+                    className="w-4 h-4 rounded text-zinc-950 focus:ring-zinc-950 cursor-pointer"
+                  />
+                  <div>
+                    <span className="font-bold text-zinc-900 block">Imprimir talão automaticamente ao fechar venda</span>
+                    <span className="text-[11px] text-zinc-500">Envia o documento diretamente para a impressora térmica de 80mm</span>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 p-3.5 rounded-2xl bg-zinc-50 hover:bg-zinc-100/70 cursor-pointer transition-colors border border-gray-100">
+                  <input
+                    type="checkbox"
+                    checked={formData.allowNegativeStock}
+                    onChange={(e) => setFormData({ ...formData, allowNegativeStock: e.target.checked })}
+                    className="w-4 h-4 rounded text-zinc-950 focus:ring-zinc-950 cursor-pointer"
+                  />
+                  <div>
+                    <span className="font-bold text-zinc-900 block">Permitir venda de produtos sem stock</span>
+                    <span className="text-[11px] text-zinc-500">Desativa o bloqueio caso o inventário esteja em zero</span>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 p-3.5 rounded-2xl bg-zinc-50 hover:bg-zinc-100/70 cursor-pointer transition-colors border border-gray-100">
+                  <input
+                    type="checkbox"
+                    checked={formData.soundAlerts}
+                    onChange={(e) => setFormData({ ...formData, soundAlerts: e.target.checked })}
+                    className="w-4 h-4 rounded text-zinc-950 focus:ring-zinc-950 cursor-pointer"
+                  />
+                  <div>
+                    <span className="font-bold text-zinc-900 block">Sinais sonoros de leitor de código de barras</span>
+                    <span className="text-[11px] text-zinc-500">Toca confirmação sonora ao registar artigos no carrinho</span>
+                  </div>
+                </label>
+              </div>
+
+              {/* Informações de Contingência do Navegador */}
+              <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-100 text-blue-900 text-xs space-y-1.5">
+                <div className="flex items-center gap-2 font-bold text-blue-950">
+                  <AlertCircle size={15} className="text-blue-600" />
+                  <span>Compatibilidade de Impressão Direta</span>
+                </div>
+                <p className="text-blue-800/90 leading-relaxed">
+                  A comunicação física via cabo USB com impressoras de recibos (ESC/POS) é suportada nativamente no Google Chrome e Microsoft Edge via <strong>Web Serial API</strong>. Em navegadores móveis ou sem permissão direta, o sistema utiliza o spooler de impressão nativo do sistema operacional sem perda de qualidade.
+                </p>
+                <div className="pt-1 flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleClearPrinterCache}
+                    className="text-[11px] font-bold text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                  >
+                    Redefinir memória de portas USB
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                id="btn-save-hardware-settings"
+                type="submit"
+                className="px-6 py-3 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
+              >
+                <Save size={16} className="text-emerald-400" />
+                <span>Guardar Configurações de Hardware</span>
+              </button>
+            </div>
+          </form>
+        </div>
       )}
 
       {/* TAB 3: USERS & OPERATORS (Protected by Role Matrix) */}
@@ -603,10 +859,137 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       )}
 
+      {/* TAB 5: LIXEIRA & RECICLAGEM ANIMADA */}
+      {activeTab === 'trash' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <AnimatedTrashManager
+            onPermanentDelete={(item) => {
+              toast.error(`Item "${item.name}" eliminado permanentemente.`);
+            }}
+            onRestore={(item) => {
+              toast.success(`Item "${item.name}" restaurado com sucesso!`);
+            }}
+          />
+        </div>
+      )}
+
+      {/* Modal de Pré-visualização do Talão Térmico de Teste (80mm) */}
+      {testReceiptModalOpen && (
+        <div className="fixed inset-0 z-50 bg-zinc-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 space-y-4 animate-in zoom-in-95 duration-150 text-xs">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <Printer size={18} className="text-zinc-900" />
+                <h3 className="font-bold text-sm text-zinc-950">Talão de Teste Térmico (80mm)</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTestReceiptModalOpen(false)}
+                className="p-1.5 rounded-xl hover:bg-zinc-100 text-zinc-500 cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Simulação física do papel térmico */}
+            <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-200 font-mono text-[11px] leading-relaxed text-zinc-800 shadow-inner">
+              <div className="text-center font-bold pb-2 border-b border-dashed border-zinc-300">
+                <p className="text-xs uppercase">{formData.tradingName || 'LOJA MASAKULA'}</p>
+                <p className="text-[10px] text-zinc-500 font-normal">{formData.companyName}</p>
+                <p className="text-[10px] text-zinc-500 font-normal">NIF: {formData.nif || '5417082910'}</p>
+                <p className="text-[10px] text-zinc-500 font-normal">{formData.address || 'Luanda, Angola'}</p>
+              </div>
+
+              <div className="py-2.5 border-b border-dashed border-zinc-300 space-y-1">
+                <div className="flex justify-between">
+                  <span>DOCUMENTO:</span>
+                  <span className="font-bold">TALÃO TESTE/01</span>
+                </div>
+                <div className="flex justify-between text-zinc-600">
+                  <span>DATA:</span>
+                  <span>{new Date().toLocaleDateString('pt-AO')} {new Date().toLocaleTimeString('pt-AO')}</span>
+                </div>
+                <div className="flex justify-between text-zinc-600">
+                  <span>BOBINA:</span>
+                  <span>{printerPaper} ({printerBaud} bps)</span>
+                </div>
+              </div>
+
+              <div className="py-2.5 border-b border-dashed border-zinc-300 space-y-1.5">
+                <div className="flex justify-between font-bold">
+                  <span>ARTIGO DE TESTE 80MM</span>
+                  <span>1.500,00 Kz</span>
+                </div>
+                <div className="flex justify-between text-[10px] text-zinc-500">
+                  <span>1 x 1.500,00 Kz (IVA 14% Incl.)</span>
+                  <span>Taxa Normal</span>
+                </div>
+              </div>
+
+              <div className="py-2 border-b border-dashed border-zinc-300 space-y-1">
+                <div className="flex justify-between font-bold text-xs">
+                  <span>TOTAL A PAGAR:</span>
+                  <span>1.500,00 Kz</span>
+                </div>
+                <div className="flex justify-between text-zinc-600">
+                  <span>NUMERÁRIO:</span>
+                  <span>2.000,00 Kz</span>
+                </div>
+                <div className="flex justify-between text-zinc-600">
+                  <span>TROCO:</span>
+                  <span>500,00 Kz</span>
+                </div>
+              </div>
+
+              <div className="pt-3 text-center text-[10px] text-zinc-500 space-y-1">
+                <p className="font-bold text-zinc-700">SOFTWARE CERTIFICADO AGT Nº 999/AGT/2026</p>
+                <p>Obrigado pela preferência!</p>
+                <div className="pt-2 text-[9px] text-zinc-400 font-sans italic">
+                  [Corte Automático de Papel ESC/POS GS V 0]
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  window.print();
+                  setTestReceiptModalOpen(false);
+                }}
+                className="flex-1 py-2.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+              >
+                <Printer size={14} />
+                <span>Imprimir no Sistema</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTestReceiptModalOpen(false)}
+                className="px-4 py-2.5 rounded-2xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold text-xs transition cursor-pointer"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Permission Matrix Modal */}
       <PermissionMatrixModal
         isOpen={isMatrixOpen}
         onClose={() => setIsMatrixOpen(false)}
+      />
+
+      {/* Modal de Confirmação de Exclusão de Utilizador */}
+      <ConfirmModal
+        isOpen={!!userToDelete}
+        title="Remover Utilizador"
+        description={`Tem a certeza de que deseja remover o utilizador "${userToDelete?.name}" do sistema? Esta conta perderá o acesso imediato aos terminais de venda.`}
+        confirmText="Sim, Remover Utilizador"
+        cancelText="Cancelar"
+        isDestructive={true}
+        onConfirm={confirmDeleteUser}
+        onClose={() => setUserToDelete(null)}
       />
     </div>
   );

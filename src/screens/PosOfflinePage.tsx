@@ -10,7 +10,7 @@ import { decrementLocalStock } from "@/services/productCacheService";
 import { createClient } from "@/lib/supabase/client";
 import { useCachedProducts } from "@/hooks/useCachedProducts";
 
-export default function POSPage() {
+export default function PosOfflinePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -146,7 +146,7 @@ export default function POSPage() {
         </div>
 
         <div className="grid flex-1 grid-cols-2 gap-3 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/10 sm:grid-cols-3 lg:grid-cols-4">
-          {filteredProducts.map((product) => (
+          {products.map((product) => (
             <button
               key={product.id}
               type="button"

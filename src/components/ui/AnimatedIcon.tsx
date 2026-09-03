@@ -10,19 +10,19 @@ interface AnimatedIconProps extends HTMLMotionProps<"div"> {
   animation?: AnimationType;
 }
 
-const animationVariants = {
+const animationVariants: Record<AnimationType, any> = {
   bounce: {
     hover: {
       y: -3,
       scale: 1.1,
-      transition: { type: "spring", stiffness: 400, damping: 10 },
+      transition: { type: "spring" as const, stiffness: 400, damping: 10 },
     },
   },
   tilt: {
     hover: {
       rotate: 15,
       scale: 1.1,
-      transition: { type: "spring", stiffness: 300, damping: 12 },
+      transition: { type: "spring" as const, stiffness: 300, damping: 12 },
     },
   },
   spin: {

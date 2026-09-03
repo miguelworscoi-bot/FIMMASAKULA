@@ -33,6 +33,7 @@ import { ReportsView } from '../views/ReportsView';
 import { SettingsView } from '../views/SettingsView';
 import { BusinessIntelligenceScreen } from '../BusinessIntelligenceScreen';
 import { ShiftAnalyticsPage } from '../ShiftAnalyticsPage';
+import { FloatingTrashCan } from '../ui/FloatingTrashCan';
 import { 
   loadStoredProducts, 
   saveStoredProducts, 
@@ -495,6 +496,9 @@ export const AppShell: React.FC<AppShellProps> = ({
           </AnimatePresence>
         </main>
       </div>
+
+      {/* Ícone Flutuante da Lixeira (SÓ APARECE QUANDO SE APAGA UM ELEMENTO) */}
+      <FloatingTrashCan />
     </div>
   );
 };

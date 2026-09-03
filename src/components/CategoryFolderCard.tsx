@@ -58,10 +58,7 @@ export const CategoryFolderCard: React.FC<CategoryFolderProps> = ({
     <div
       onClick={() => onSelectCategory?.(id)}
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => {
-        setIsHovered(false);
-        setShowMenu(false);
-      }}
+      onMouseLeave={() => setIsHovered(false)}
       className="group relative flex cursor-pointer flex-col justify-between rounded-3xl border border-gray-200/80 bg-white dark:bg-[#131313] dark:border-white/10 p-6 transition-all duration-300 hover:border-gray-300 hover:shadow-xl dark:hover:border-white/20 dark:hover:bg-[#181818] dark:hover:shadow-2xl shadow-sm select-none"
     >
       {/* CABEÇALHO + FERRAMENTAS (EDITAR / ELIMINAR) */}
@@ -98,38 +95,47 @@ export const CategoryFolderCard: React.FC<CategoryFolderProps> = ({
           {/* Dropdown Flutuante */}
           <AnimatePresence>
             {showMenu && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: -5 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: -5 }}
-                transition={{ duration: 0.15 }}
-                className="absolute right-0 top-10 z-50 w-36 overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1c1c1c] p-1.5 shadow-2xl backdrop-blur-xl"
-              >
-                <button
-                  type="button"
+              <>
+                <div
+                  className="fixed inset-0 z-40 cursor-default"
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowMenu(false);
-                    onEditCategory?.(id);
                   }}
-                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-zinc-700 dark:text-gray-200 transition hover:bg-zinc-100 dark:hover:bg-white/10 hover:text-zinc-950 dark:hover:text-white cursor-pointer"
+                />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-10 z-50 w-36 overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1c1c1c] p-1.5 shadow-2xl backdrop-blur-xl"
                 >
-                  <Pencil className="h-3.5 w-3.5 text-cyan-500 dark:text-cyan-400" />
-                  Editar
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowMenu(false);
-                    onDeleteCategory?.(id);
-                  }}
-                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 transition hover:bg-rose-50 dark:hover:bg-rose-500/10 cursor-pointer"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Eliminar
-                </button>
-              </motion.div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(false);
+                      onEditCategory?.(id);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-zinc-700 dark:text-gray-200 transition hover:bg-zinc-100 dark:hover:bg-white/10 hover:text-zinc-950 dark:hover:text-white cursor-pointer"
+                  >
+                    <Pencil className="h-3.5 w-3.5 text-cyan-500 dark:text-cyan-400" />
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(false);
+                      onDeleteCategory?.(id);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 transition hover:bg-rose-50 dark:hover:bg-rose-500/10 cursor-pointer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Eliminar
+                  </button>
+                </motion.div>
+              </>
             )}
           </AnimatePresence>
         </div>

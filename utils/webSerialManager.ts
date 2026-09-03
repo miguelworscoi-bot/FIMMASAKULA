@@ -23,7 +23,36 @@ export async function getOrReconnectSerialPort(): Promise<SerialPort> {
     throw new Error("A Web Serial API não é suportada neste navegador.");
   }
 
-  const authorizedPorts = await navigator.serial.getPorts();
+  // Verifica Permissions Policy para evitar exceção de restrição em iframe
+  if (typeof document !== "undefined" && "permissionsPolicy" in document) {
+    try {
+      const policy = (document as any).permissionsPolicy;
+      if (typeof policy?.allowsFeature === "function" && !policy.allowsFeature("serial")) {
+        throw new Error(
+          "O acesso à porta serial está bloqueado por política de segurança no iframe. Abra a aplicação num novo separador para conectar a impressora térmica física via USB/Serial."
+        );
+      }
+    } catch (policyErr: any) {
+      if (policyErr?.message?.includes("separador")) throw policyErr;
+    }
+  }
+
+  let authorizedPorts: SerialPort[] = [];
+  try {
+    authorizedPorts = await (navigator as any).serial.getPorts();
+  } catch (err: any) {
+    if (
+      err?.name === "SecurityError" ||
+      err?.message?.toLowerCase().includes("permissions policy") ||
+      err?.message?.toLowerCase().includes("disallowed")
+    ) {
+      throw new Error(
+        "Acesso à porta serial indisponível na pré-visualização (iframe). Abra a aplicação num novo separador para aceder ao hardware USB/Serial."
+      );
+    }
+    throw err;
+  }
+
   const savedInfo = readSavedPrinterInfo();
   let targetPort: SerialPort | undefined;
 
@@ -40,7 +69,24 @@ export async function getOrReconnectSerialPort(): Promise<SerialPort> {
   }
 
   if (!targetPort) {
-    targetPort = await navigator.serial.requestPort();
+    try {
+      targetPort = await (navigator as any).serial.requestPort();
+    } catch (err: any) {
+      if (
+        err?.name === "SecurityError" ||
+        err?.message?.toLowerCase().includes("permissions policy") ||
+        err?.message?.toLowerCase().includes("disallowed")
+      ) {
+        throw new Error(
+          "Acesso à porta serial bloqueado por política de segurança no iframe. Abra a aplicação num novo separador."
+        );
+      }
+      throw err;
+    }
+  }
+
+  if (!targetPort) {
+    throw new Error("Nenhuma porta serial selecionada.");
   }
 
   const info = targetPort.getInfo();
