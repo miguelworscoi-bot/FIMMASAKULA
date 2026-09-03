@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
+import { soundEffects } from '@/lib/audio/soundEffects';
 
 export interface DeletedItemRecord {
   id: string;
@@ -104,16 +105,20 @@ export const TrashProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       setFlyingParticles((prev) => [...prev, newParticle]);
 
-      // Quando a partícula chega perto da lixeira (~500ms), ativa animação de absorção da lixeira
+      // Toca som suave de voo/vento
+      soundEffects.playTrashWhoosh();
+
+      // Quando a partícula chega perto da lixeira (~450ms), ativa animação de absorção da lixeira e som de impacto
       setTimeout(() => {
         setIsAbsorbing(true);
-        setTimeout(() => setIsAbsorbing(false), 600);
+        soundEffects.playTrashAbsorb();
+        setTimeout(() => setIsAbsorbing(false), 550);
       }, 450);
 
-      // Remove a partícula do DOM após completar a animação de voo (850ms)
+      // Remove a partícula do DOM após completar a animação de voo (800ms)
       setTimeout(() => {
         setFlyingParticles((prev) => prev.filter((p) => p.id !== particleId));
-      }, 850);
+      }, 800);
     },
     []
   );
@@ -131,6 +136,7 @@ export const TrashProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           dismissUndo();
         }
 
+        soundEffects.playSuccess();
         toast.success(`${itemToRestore.typeLabel} "${itemToRestore.name}" restaurado com sucesso.`);
       } catch (error) {
         console.error('Erro ao restaurar item:', error);

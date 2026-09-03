@@ -158,7 +158,7 @@ const ExpensesContent: React.FC<ExpensesViewProps> = ({
     setExpenseToDelete({ id, description });
   };
 
-  const confirmDeleteExpense = () => {
+  const confirmDeleteExpense = (e?: React.MouseEvent) => {
     if (!expenseToDelete) return;
     const { id, description } = expenseToDelete;
     const targetExp = expenses.find((e) => e.id === id);
@@ -178,7 +178,7 @@ const ExpensesContent: React.FC<ExpensesViewProps> = ({
         onPermanentDelete: (exp: Expense) => {
           supabaseService.deleteExpense(exp.id).catch((err) => console.warn(err));
         },
-      });
+      }, e ? { clientX: e.clientX, clientY: e.clientY } : undefined);
     }
 
     showToast(`Despesa "${description}" movida para a lixeira.`);

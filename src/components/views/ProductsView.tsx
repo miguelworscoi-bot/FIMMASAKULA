@@ -111,7 +111,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   const [printingLabelProduct, setPrintingLabelProduct] = useState<Product | null>(null);
 
   // Deletion Modal States
-  const [productToDelete, setProductToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [productToDelete, setProductToDelete] = useState<{ id: string; name: string; clickPos?: { clientX: number; clientY: number } } | null>(null);
   const [isDeletingProduct, setIsDeletingProduct] = useState(false);
   const [isBatchDeleteModalOpen, setIsBatchDeleteModalOpen] = useState(false);
   const [isBatchDeleting, setIsBatchDeleting] = useState(false);
@@ -467,18 +467,19 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     }
   };
 
-  const handleDeleteProduct = (id: string, name: string) => {
+  const handleDeleteProduct = (id: string, name: string, clickPos?: { clientX: number; clientY: number }) => {
     if (!isManager) {
       setRestrictedActionAlert('Remoção de artigos requer perfil GERENTE.');
       return;
     }
-    setProductToDelete({ id, name });
+    setProductToDelete({ id, name, clickPos });
   };
 
-  const confirmDeleteProduct = async () => {
+  const confirmDeleteProduct = async (e?: React.MouseEvent) => {
     if (!productToDelete) return;
     const { id, name } = productToDelete;
     const targetProduct = products.find(p => p.id === id);
+    const clickCoords = productToDelete.clickPos || (e ? { clientX: e.clientX, clientY: e.clientY } : undefined);
     setIsDeletingProduct(true);
     try {
       setProducts(prev => prev.filter(p => p.id !== id));
@@ -505,7 +506,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           onPermanentDelete: (item: Product) => {
             supabaseService.deleteProduct(item.id).catch(err => console.warn('Supabase delete:', err));
           },
-        });
+        }, clickCoords);
       }
 
       showToast(`Item "${name}" movido para a lixeira.`);
@@ -1509,7 +1510,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
 
                               <button
                                 type="button"
-                                onClick={() => handleDeleteProduct(p.id, p.name)}
+                                onClick={(e) => handleDeleteProduct(p.id, p.name, { clientX: e.clientX, clientY: e.clientY })}
                                 className="p-1.5 rounded-xl bg-zinc-100 hover:bg-rose-50 text-zinc-600 hover:text-rose-600 border border-zinc-200 hover:border-rose-200 transition-colors cursor-pointer"
                                 title="Excluir"
                               >

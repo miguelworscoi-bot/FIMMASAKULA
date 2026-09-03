@@ -9,7 +9,7 @@ export interface ConfirmModalProps {
   cancelText?: string;
   isDestructive?: boolean;
   isLoading?: boolean;
-  onConfirm: () => void;
+  onConfirm: (e?: React.MouseEvent) => void;
   onClose: () => void;
 }
 
@@ -88,7 +88,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
           <button
             type="button"
-            onClick={onConfirm}
+            onClick={(e) => onConfirm(e)}
             disabled={isLoading}
             className={`px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50 ${
               isDestructive

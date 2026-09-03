@@ -68,7 +68,8 @@ export default function CategoriesSubscreenPage({
 
   const handleConfirmDelete = async (
     categoryId: string,
-    targetCategoryId: string | null
+    targetCategoryId: string | null,
+    clickPos?: { clientX: number; clientY: number }
   ) => {
     try {
       const cat = deletingCategory;
@@ -88,7 +89,7 @@ export default function CategoriesSubscreenPage({
               colorHex: itemData.category.colorHex,
             });
           },
-        });
+        }, clickPos);
       }
 
       toast.success(`Categoria "${catName}" movida para a lixeira.`);

@@ -108,7 +108,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
     }
   };
 
-  const confirmDeleteCustomer = () => {
+  const confirmDeleteCustomer = (e?: React.MouseEvent) => {
     if (!customerToDelete) return;
     const targetCust = customerToDelete;
     setCustomers(prev => prev.filter(c => c.id !== targetCust.id));
@@ -122,7 +122,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
       onRestore: (restored: Customer) => {
         setCustomers(prev => [restored, ...prev]);
       },
-    });
+    }, e ? { clientX: e.clientX, clientY: e.clientY } : undefined);
 
     toast.success(`Cliente "${targetCust.name}" movido para a lixeira.`);
     setCustomerToDelete(null);
