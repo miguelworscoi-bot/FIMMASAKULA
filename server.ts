@@ -4,6 +4,9 @@ import { existsSync } from "fs";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 
+// Load .env.development.local first (where the v0/Vercel project env vars,
+// e.g. Supabase, live in this sandbox), then fall back to .env for local overrides.
+dotenv.config({ path: ".env.development.local" });
 dotenv.config();
 
 import {
